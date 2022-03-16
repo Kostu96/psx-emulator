@@ -15,8 +15,17 @@ void InstructionSet::zero(CPU& cpu, Instruction instruction)
     case 0b000000:
         SSL(cpu, instruction);
         break;
+    case 0b001000:
+        JR(cpu, instruction);
+        break;
+    case 0b100001:
+        ADDU(cpu, instruction);
+        break;
     case 0b100101:
         OR(cpu, instruction);
+        break;
+    case 0b101011:
+        SLTU(cpu, instruction);
         break;
     default:
         std::cerr << "Unhandled zero instruction: " << std::hex << instruction.subfn() << std::dec << '\n';
@@ -32,6 +41,21 @@ void InstructionSet::SSL(CPU& cpu, Instruction instruction)
     cpu.setReg(target, value);
 }
 
+void InstructionSet::JR(CPU& cpu, Instruction instruction)
+{
+    RegisterIndex s = instruction.regS();
+    cpu.m_PC = cpu.getReg(s);
+}
+
+void InstructionSet::ADDU(CPU& cpu, Instruction instruction)
+{
+    RegisterIndex s = instruction.regS();
+    RegisterIndex t = instruction.regT();
+    RegisterIndex d = instruction.regD();
+    uint32_t value = cpu.getReg(s) + cpu.getReg(t);
+    cpu.setReg(d, value);
+}
+
 void InstructionSet::OR(CPU& cpu, Instruction instruction)
 {
     RegisterIndex target = instruction.regS();
@@ -40,9 +64,24 @@ void InstructionSet::OR(CPU& cpu, Instruction instruction)
     cpu.setReg(target, value);
 }
 
+void InstructionSet::SLTU(CPU& cpu, Instruction instruction)
+{
+    RegisterIndex d = instruction.regD();
+    RegisterIndex s = instruction.regS();
+    RegisterIndex t = instruction.regT();
+    uint32_t value = cpu.getReg(s) < cpu.getReg(t);
+    cpu.setReg(d, value);
+}
+
 void InstructionSet::J(CPU& cpu, Instruction instruction)
 {
     cpu.m_PC = (cpu.m_PC & 0xF0000000) | (instruction.imm_jump() << 2); // TODO: move this shift to imm_jump()?
+}
+
+void InstructionSet::JAL(CPU& cpu, Instruction instruction)
+{
+    cpu.setReg(31, cpu.m_PC);
+    J(cpu, instruction);
 }
 
 void InstructionSet::BNE(CPU& cpu, Instruction instruction)
@@ -72,6 +111,14 @@ void InstructionSet::ADDIU(CPU& cpu, Instruction instruction)
     RegisterIndex target = instruction.regT();
     RegisterIndex source = instruction.regS();
     uint32_t value = cpu.getReg(source) + instruction.imm_se();
+    cpu.setReg(target, value);
+}
+
+void InstructionSet::ANDI(CPU& cpu, Instruction instruction)
+{
+    RegisterIndex target = instruction.regS();
+    uint32_t value = cpu.getReg(target);
+    value &= instruction.imm();
     cpu.setReg(target, value);
 }
 
@@ -110,9 +157,24 @@ void InstructionSet::MTC0(CPU& cpu, Instruction instruction)
     RegisterIndex copReg = instruction.regD();
     uint32_t value = cpu.getReg(cpuReg);
 
-    if (copReg.index == 12)
+    switch (copReg.index) {
+    case 3:
+    case 5:
+    case 6:
+    case 7:
+    case 9:
+    case 11:
+        if (value != 0)
+            std::cerr << "Unhandled write to breakpoints registers\n";
+        break; // ignore these if 0
+    case 12:
         cpu.m_SR = value;
-    else {
+        break;
+    case 13:
+        if (value != 0)
+            std::cerr << "Unhandled write to CAUSE register\n";
+        break; // CAUSE register - ignore if 0
+    default:
         std::cerr << "Unhandled MTC0 instruction\n";
     }
 }
@@ -128,6 +190,32 @@ void InstructionSet::LW(CPU& cpu, Instruction instruction)
     uint32_t address = cpu.getReg(s) + imm;
     uint32_t value = cpu.load32(address);
     cpu.m_pendingLoad = { t, address };
+}
+
+void InstructionSet::SB(CPU& cpu, Instruction instruction)
+{
+    if (cpu.m_SR & 0x10000)
+        return; // isolated cache bit is set
+
+    uint32_t imm = instruction.imm_se();
+    RegisterIndex t = instruction.regT();
+    RegisterIndex s = instruction.regS();
+    uint32_t address = cpu.getReg(s) + imm;
+    uint8_t value = cpu.getReg(t);
+    cpu.store8(address, value);
+}
+
+void InstructionSet::SH(CPU& cpu, Instruction instruction)
+{
+    if (cpu.m_SR & 0x10000)
+        return; // isolated cache bit is set
+
+    uint32_t imm = instruction.imm_se();
+    RegisterIndex t = instruction.regT();
+    RegisterIndex s = instruction.regS();
+    uint32_t address = cpu.getReg(s) + imm;
+    uint16_t value = cpu.getReg(t);
+    cpu.store16(address, value);
 }
 
 void InstructionSet::SW(CPU& cpu, Instruction instruction)
@@ -147,7 +235,7 @@ InstructionSet::InstFuncType InstructionSet::Fns[] = {
     zero,    // 000000
     invalid, // 000001
     J,       // 000010
-    invalid, // 000011
+    JAL,     // 000011
     invalid, // 000100
     BNE,     // 000101
     invalid, // 000110
@@ -156,7 +244,7 @@ InstructionSet::InstFuncType InstructionSet::Fns[] = {
     ADDIU,   // 001001
     invalid, // 001010
     invalid, // 001011
-    invalid, // 001100
+    ANDI,    // 001100
     ORI,     // 001101
     invalid, // 001110
     LUI,     // 001111
@@ -184,8 +272,8 @@ InstructionSet::InstFuncType InstructionSet::Fns[] = {
     invalid, // 100101
     invalid, // 100110
     invalid, // 100111
-    invalid, // 101000
-    invalid, // 101001
+    SB,      // 101000
+    SH,      // 101001
     invalid, // 101010
     SW,      // 101011
     invalid, // 101100

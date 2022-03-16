@@ -42,5 +42,4 @@ uint32_t BIOS::load32(uint32_t offset) const
     return b0 | (b1 << 8) | (b2 << 16) | (b3 << 24);
 }
 
-const AddressRange BIOS::RANGE{ 0xBFC00000, 512 * 1024 };
 const char* BIOS::FILENAME = "SCPH-1001.bin";

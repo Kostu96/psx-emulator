@@ -18,6 +18,8 @@ private:
 
     void decodeAndExecute(Instruction instruction);
     uint32_t load32(uint32_t address) { return m_memoryMap.load32(address); }
+    void store8(uint32_t address, uint8_t value) { m_memoryMap.store8(address, value); }
+    void store16(uint32_t address, uint16_t value) { m_memoryMap.store16(address, value); }
     void store32(uint32_t address, uint32_t value) { m_memoryMap.store32(address, value); }
 
     uint32_t m_PC = 0xBFC00000; // BIOS start

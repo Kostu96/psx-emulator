@@ -35,4 +35,3 @@ void RAM::store32(uint32_t offset, uint32_t value)
     m_data[offset + 3] = b3;
 }
 
-const AddressRange RAM::RANGE{ 0xA0000000, 2 * 1024 * 1024 };

@@ -6,8 +6,6 @@
 class BIOS
 {
 public:
-	static const AddressRange RANGE;
-
 	BIOS();
 	~BIOS();
 

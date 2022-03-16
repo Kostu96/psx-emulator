@@ -6,8 +6,6 @@
 class RAM
 {
 public:
-	static const AddressRange RANGE;
-
 	RAM();
 	~RAM();
 
