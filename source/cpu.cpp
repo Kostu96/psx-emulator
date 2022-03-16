@@ -3,10 +3,18 @@
 
 #include <iostream>
 
+void CPU::reset()
+{
+    m_PC = 0xBFC00000; // BIOS start
+    m_nextInstruction = 0x0; // NOP
+    m_regs.reset();
+}
+
 void CPU::runNextInstruction()
 {
-    uint32_t inst = load32(PC);
-    PC += 4;
+    uint32_t inst = m_nextInstruction;
+    m_nextInstruction = load32(m_PC);
+    m_PC += 4;
     decodeAndExecute(inst);
 }
 

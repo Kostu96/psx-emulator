@@ -10,7 +10,9 @@ public:
 	static InstFuncType Fns[];
 private:
 	static void invalid(CPU& cpu, Instruction instruction);
+	static void zero(CPU& cpu, Instruction instruction);
 	static void SSL(CPU& cpu, Instruction instruction);
+	static void OR(CPU& cpu, Instruction instruction);
 	static void J(CPU& cpu, Instruction instruction);
 	static void ADDIU(CPU& cpu, Instruction instruction);
 	static void ORI(CPU& cpu, Instruction instruction);

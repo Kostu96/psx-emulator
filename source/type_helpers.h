@@ -20,9 +20,10 @@ struct Instruction
     Instruction(uint32_t pDword) : dword(pDword) {}
 
     uint32_t opcode() const { return dword >> 26; }
-    uint32_t reg1() const { return (dword >> 21) & 0x1F; }
-    uint32_t reg2() const { return (dword >> 16) & 0x1F; }
-    uint32_t reg3() const { return (dword >> 11) & 0x1F; }
+    uint32_t subfn() const { return dword & 0x3F; }
+    uint32_t regS() const { return (dword >> 21) & 0x1F; }
+    uint32_t regT() const { return (dword >> 16) & 0x1F; }
+    uint32_t regD() const { return (dword >> 11) & 0x1F; }
     uint32_t imm() const { return dword & 0xFFFF; }
     uint32_t imm_se() const { return static_cast<int16_t>(dword & 0xFFFF); }
     uint32_t imm_jump() const { return dword & 0x3FFFFFF; }

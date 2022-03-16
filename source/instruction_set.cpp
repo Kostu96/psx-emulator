@@ -8,50 +8,76 @@ void InstructionSet::invalid(CPU& cpu, Instruction instruction)
     std::cerr << "Unhandled instruction: " << std::hex << instruction.opcode() << std::dec << '\n';
 }
 
+void InstructionSet::zero(CPU& cpu, Instruction instruction)
+{
+    uint32_t subfunction = instruction.subfn();
+    switch (subfunction) {
+    case 0b000000:
+        SSL(cpu, instruction);
+        break;
+    case 0b100101:
+        OR(cpu, instruction);
+        break;
+    default:
+        std::cerr << "Unhandled zero instruction: " << std::hex << instruction.subfn() << std::dec << '\n';
+    }
+}
+
 void InstructionSet::SSL(CPU& cpu, Instruction instruction)
 {
-    uint32_t source = instruction.reg1();
-    uint32_t target = instruction.reg3();
-    uint32_t value = cpu.regs.get(source);
+    uint32_t source = instruction.regT();
+    uint32_t target = instruction.regD();
+    uint32_t value = cpu.m_regs.get(source);
     value <<= instruction.shift();
-    cpu.regs.set(target, value);
+    cpu.m_regs.set(target, value);
+}
+
+void InstructionSet::OR(CPU& cpu, Instruction instruction)
+{
+    uint32_t target = instruction.regS();
+    uint32_t value = cpu.m_regs.get(target);
+    value |= instruction.imm();
+    cpu.m_regs.set(target, value);
 }
 
 void InstructionSet::J(CPU& cpu, Instruction instruction)
 {
-    cpu.PC = (cpu.PC & 0xF0000000) | (instruction.imm_jump() << 2); // TODO: move this shift to imm_jump()?
+    cpu.m_PC = (cpu.m_PC & 0xF0000000) | (instruction.imm_jump() << 2); // TODO: move this shift to imm_jump()?
 }
 
 void InstructionSet::ADDIU(CPU& cpu, Instruction instruction)
 {
-    uint32_t target = instruction.reg1();
-    uint32_t source = instruction.reg2();
-    uint32_t value = cpu.regs.get(source) + instruction.imm_se();
-    cpu.regs.set(target, value);
+    uint32_t target = instruction.regT();
+    uint32_t source = instruction.regS();
+    uint32_t value = cpu.m_regs.get(source) + instruction.imm_se();
+    cpu.m_regs.set(target, value);
 }
 
 void InstructionSet::ORI(CPU& cpu, Instruction instruction)
 {
-    uint32_t target = instruction.reg2();
-    uint32_t value = cpu.regs.get(target);
+    uint32_t target = instruction.regS();
+    uint32_t value = cpu.m_regs.get(target);
     value |= instruction.imm();
-    cpu.regs.set(target, value);
+    cpu.m_regs.set(target, value);
 }
 
 void InstructionSet::LUI(CPU& cpu, Instruction instruction)
 {
-	cpu.regs.set(instruction.reg2(), instruction.imm() << 16);
+    uint32_t imm = instruction.imm();
+    uint32_t target = instruction.regT();
+    uint32_t value = imm << 16;
+	cpu.m_regs.set(target, value);
 }
 
 void InstructionSet::SW(CPU& cpu, Instruction instruction)
 {
-    cpu.store32(cpu.regs.get(instruction.reg1()) + instruction.imm_se(), instruction.reg2());
+    cpu.store32(cpu.m_regs.get(instruction.regT()) + instruction.imm_se(), instruction.regS());
 }
 
 InstructionSet::InstFuncType InstructionSet::Fns[] = {
-    SSL,     // 000000
+    zero,    // 000000
     invalid, // 000001
-    invalid, // 000010
+    J,       // 000010
     invalid, // 000011
     invalid, // 000100
     invalid, // 000101

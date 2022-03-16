@@ -30,34 +30,9 @@ assure_out_of_source_builds()
 
 project(psx-emu-proj LANGUAGES CXX)
 set(TARGET_NAME psxEmulator)
+set(TARGET_NAME_LIB ${TARGET_NAME}_lib)
+set(TARGET_NAME_TESTS ${TARGET_NAME}_tests)
 
-set(SOURCE_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/bios.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/bios.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/cpu.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/cpu.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/instruction_set.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/instruction_set.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/main.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/memory_map.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/memory_map.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/registers.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/registers.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/type_helpers.h
-)
-
-add_executable(${TARGET_NAME}
-    ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt
-	${SOURCE_FILES}
-)
-
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/source PREFIX source FILES ${SOURCE_FILES})
-
-set_target_properties(${TARGET_NAME} PROPERTIES
-    MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
-    VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-if (MSVC)
-    set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${TARGET_NAME})
-endif()
+add_subdirectory(third_party)
+add_subdirectory(source)
+add_subdirectory(tests)
