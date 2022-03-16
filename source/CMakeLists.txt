@@ -7,6 +7,8 @@ set(SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/instruction_set.h
     ${CMAKE_CURRENT_SOURCE_DIR}/memory_map.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/memory_map.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ram.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ram.h
     ${CMAKE_CURRENT_SOURCE_DIR}/registers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/registers.h
     ${CMAKE_CURRENT_SOURCE_DIR}/type_helpers.h

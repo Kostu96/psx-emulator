@@ -10,6 +10,8 @@ uint32_t MemoryMap::load32(uint32_t address) const
     uint32_t offset;
     if (BIOS::RANGE.contains(address, offset))
         return m_bios.load32(offset);
+    else if (RAM::RANGE.contains(address, offset))
+        return m_ram.load32(offset);
 
     std::cerr << "Unhandled access when loading from: " << std::hex << address << std::dec << '\n';
     return -1;
@@ -21,7 +23,13 @@ void MemoryMap::store32(uint32_t address, uint32_t value)
         std::cerr << "Unaligned access when storing to: " << std::hex << address << std::dec << '\n';
 
     uint32_t offset;
-    if (MEMORY_CONTROL_RANGE.contains(address, offset)) {
+    if (RAM::RANGE.contains(address, offset)) {
+        m_ram.store32(offset, value);
+    }
+    else if (CACHE_CONTROL_RANGE.contains(address, offset)) {
+        return; // Ignore stores to CACHE_CONTROL
+    }
+    else if (MEMORY_CONTROL_RANGE.contains(address, offset)) {
         switch (offset) {
         case 0:
             std::cerr << "Write to expansion 1 base address!\n";
@@ -41,5 +49,6 @@ void MemoryMap::store32(uint32_t address, uint32_t value)
     std::cerr << "Unhandled access when storing to: " << std::hex << address << std::dec << '\n';
 }
 
+const AddressRange MemoryMap::CACHE_CONTROL_RANGE{ 0xFFFE0130, 4 };
 const AddressRange MemoryMap::MEMORY_CONTROL_RANGE{ 0x1F801000, 36 };
 const AddressRange MemoryMap::RAM_SIZE_RANGE{ 0x1F801060, 4 };
