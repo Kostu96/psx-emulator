@@ -8,6 +8,28 @@ void InstructionSet::invalid(CPU& cpu, Instruction instruction)
     std::cerr << "Unhandled instruction: " << std::hex << instruction.opcode() << std::dec << '\n';
 }
 
+void InstructionSet::SSL(CPU& cpu, Instruction instruction)
+{
+    uint32_t source = instruction.reg1();
+    uint32_t target = instruction.reg3();
+    uint32_t value = cpu.regs.get(source);
+    value <<= instruction.shift();
+    cpu.regs.set(target, value);
+}
+
+void InstructionSet::J(CPU& cpu, Instruction instruction)
+{
+    cpu.PC = (cpu.PC & 0xF0000000) | (instruction.imm_jump() << 2); // TODO: move this shift to imm_jump()?
+}
+
+void InstructionSet::ADDIU(CPU& cpu, Instruction instruction)
+{
+    uint32_t target = instruction.reg1();
+    uint32_t source = instruction.reg2();
+    uint32_t value = cpu.regs.get(source) + instruction.imm_se();
+    cpu.regs.set(target, value);
+}
+
 void InstructionSet::ORI(CPU& cpu, Instruction instruction)
 {
     uint32_t target = instruction.reg2();
@@ -23,11 +45,11 @@ void InstructionSet::LUI(CPU& cpu, Instruction instruction)
 
 void InstructionSet::SW(CPU& cpu, Instruction instruction)
 {
-    cpu.store32(cpu.regs.get(instruction.reg1()) + instruction.imm(), instruction.reg2());
+    cpu.store32(cpu.regs.get(instruction.reg1()) + instruction.imm_se(), instruction.reg2());
 }
 
 InstructionSet::InstFuncType InstructionSet::Fns[] = {
-    invalid, // 000000
+    SSL,     // 000000
     invalid, // 000001
     invalid, // 000010
     invalid, // 000011
@@ -36,7 +58,7 @@ InstructionSet::InstFuncType InstructionSet::Fns[] = {
     invalid, // 000110
     invalid, // 000111
     invalid, // 001000
-    invalid, // 001001
+    ADDIU,   // 001001
     invalid, // 001010
     invalid, // 001011
     invalid, // 001100
