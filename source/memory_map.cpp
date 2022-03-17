@@ -63,10 +63,8 @@ uint32_t MemoryMap::load32(uint32_t address) const
     if (RAM_RANGE.contains(absAddr, offset))
         return m_ram.load32(offset);
 
-    if (DMA_RANGE.contains(absAddr, offset)) {
-        std::cerr << "Temp handled load from DMA\n";
-        return 0; // TODO: temp
-    }
+    if (DMA_RANGE.contains(absAddr, offset))
+        return m_dma.load32(offset);
 
     if (GPU_RANGE.contains(absAddr, offset)) {
         std::cerr << "Temp handled load from GPU\n";
@@ -153,8 +151,8 @@ void MemoryMap::store32(uint32_t address, uint32_t value)
     }
 
     if (DMA_RANGE.contains(absAddr, offset)) {
-        std::cerr << "Unhandled write to DMA\n";
-        return; // Ignore for now
+        m_dma.store32(offset, value);
+        return;
     }
 
     if (GPU_RANGE.contains(absAddr, offset)) {

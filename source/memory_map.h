@@ -1,6 +1,7 @@
 #pragma once
 #include "bios.h"
 #include "ram.h"
+#include "dma.h"
 
 class MemoryMap
 {
@@ -32,4 +33,5 @@ private:
 	
 	BIOS m_bios;
 	RAM m_ram;
+	DMA m_dma;
 };

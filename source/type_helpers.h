@@ -22,18 +22,18 @@ struct RegisterIndex
 
 struct Instruction
 {
-    uint32_t dword;
+    uint32_t word;
 
-    Instruction(uint32_t pDword) : dword(pDword) {}
+    Instruction(uint32_t pWord) : word(pWord) {}
 
-    uint32_t opcode() const { return dword >> 26; }
-    uint32_t subfn() const { return dword & 0x3F; }
-    uint32_t copfn() const { return (dword >> 21) & 0x1F; }
-    RegisterIndex regS() const { return (dword >> 21) & 0x1F; }
-    RegisterIndex regT() const { return (dword >> 16) & 0x1F; }
-    RegisterIndex regD() const { return (dword >> 11) & 0x1F; }
-    uint32_t imm() const { return dword & 0xFFFF; }
-    uint32_t imm_se() const { return static_cast<int16_t>(dword & 0xFFFF); }
-    uint32_t imm_jump() const { return dword & 0x3FFFFFF; }
-    uint32_t shift() const { return (dword >> 6) & 0x1F; }
+    uint32_t opcode() const { return word >> 26; }
+    uint32_t subfn() const { return word & 0x3F; }
+    uint32_t copfn() const { return (word >> 21) & 0x1F; }
+    RegisterIndex regS() const { return (word >> 21) & 0x1F; }
+    RegisterIndex regT() const { return (word >> 16) & 0x1F; }
+    RegisterIndex regD() const { return (word >> 11) & 0x1F; }
+    uint32_t imm() const { return word & 0xFFFF; }
+    uint32_t imm_se() const { return static_cast<int16_t>(word & 0xFFFF); }
+    uint32_t imm_jump() const { return word & 0x3FFFFFF; }
+    uint32_t shift() const { return (word >> 6) & 0x1F; }
 };

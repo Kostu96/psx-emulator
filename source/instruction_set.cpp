@@ -6,6 +6,7 @@
 void InstructionSet::invalid(CPU& cpu, Instruction instruction)
 {
     std::cerr << "Unhandled instruction: " << std::hex << instruction.opcode() << std::dec << '\n';
+    cpu.exception(CPU::Expception::IllegallInstruction);
 }
 
 void InstructionSet::zero(CPU& cpu, Instruction instruction)
@@ -51,8 +52,8 @@ void InstructionSet::bxxxxx(CPU& cpu, Instruction instruction)
     uint32_t imm = instruction.imm_se();
     RegisterIndex s = instruction.regS();
 
-    uint32_t isBGEZ = (instruction.dword >> 16) & 1;
-    bool isLink = (instruction.dword >> 20) & 1;
+    uint32_t isBGEZ = (instruction.word >> 16) & 1;
+    bool isLink = (instruction.word >> 20) & 1;
 
     int32_t value = cpu.getReg(s);
     uint32_t test = value < 0;
@@ -550,8 +551,8 @@ void InstructionSet::MTC0(CPU& cpu, Instruction instruction)
 
 void InstructionSet::RFE(CPU& cpu, Instruction instruction)
 {
-    if ((instruction.dword & 0x3F) != 0x10) {
-        std::cerr << "Invalid COP0 instruction: " << instruction.dword << '\n';
+    if ((instruction.word & 0x3F) != 0x10) {
+        std::cerr << "Invalid COP0 instruction: " << instruction.word << '\n';
         abort();
     }
 
@@ -588,6 +589,24 @@ void InstructionSet::LH(CPU& cpu, Instruction instruction)
         cpu.m_pendingLoad = { t, value };
     else
         cpu.exception(CPU::Expception::LoadAddressError);
+}
+
+void InstructionSet::LWL(CPU& cpu, Instruction instruction)
+{
+    uint32_t imm = instruction.imm_se();
+    RegisterIndex t = instruction.regT();
+    uint32_t current = cpu.m_outputRegs.get(t);
+    uint32_t s = cpu.getReg(instruction.regS());
+    uint32_t address = s + imm;
+    uint32_t alignedWord = cpu.load32(address & ~0x3);
+    uint32_t value = 0xDEADBEEF;
+    switch (address & 0x3) {
+    case 0: value = (current & 0x00FFFFFF) | (alignedWord << 24); break;
+    case 1: value = (current & 0x0000FFFF) | (alignedWord << 16); break;
+    case 2: value = (current & 0x000000FF) | (alignedWord << 8); break;
+    case 3: value = (current & 0x00000000) | alignedWord; break;
+    }
+    cpu.m_pendingLoad = { t, value };
 }
 
 void InstructionSet::LW(CPU& cpu, Instruction instruction)
@@ -637,6 +656,24 @@ void InstructionSet::LHU(CPU& cpu, Instruction instruction)
         cpu.exception(CPU::Expception::LoadAddressError);
 }
 
+void InstructionSet::LWR(CPU& cpu, Instruction instruction)
+{
+    uint32_t imm = instruction.imm_se();
+    RegisterIndex t = instruction.regT();
+    uint32_t current = cpu.m_outputRegs.get(t);
+    uint32_t s = cpu.getReg(instruction.regS());
+    uint32_t address = s + imm;
+    uint32_t alignedWord = cpu.load32(address & ~0x3);
+    uint32_t value = 0xDEADBEEF;
+    switch (address & 0x3) {
+    case 0: value = (current & 0x00000000) | alignedWord; break;
+    case 1: value = (current & 0xFF000000) | (alignedWord >> 8); break;
+    case 2: value = (current & 0xFFFF0000) | (alignedWord >> 16); break;
+    case 3: value = (current & 0xFFFFFF00) | (alignedWord >> 24); break;
+    }
+    cpu.m_pendingLoad = { t, value };
+}
+
 void InstructionSet::SB(CPU& cpu, Instruction instruction)
 {
     if (cpu.m_SR & 0x10000)
@@ -667,6 +704,26 @@ void InstructionSet::SH(CPU& cpu, Instruction instruction)
         cpu.exception(CPU::Expception::StoreAddressError);
 }
 
+void InstructionSet::SWL(CPU& cpu, Instruction instruction)
+{
+    if (cpu.m_SR & 0x10000)
+        return; // isolated cache bit is set
+
+    uint32_t imm = instruction.imm_se();
+    uint32_t t = cpu.getReg(instruction.regT());
+    uint32_t s = cpu.getReg(instruction.regS());
+    uint32_t address = s + imm;
+    uint32_t current = cpu.load32(address & ~0x3);
+    uint32_t value = 0xDEADBEEF;
+    switch (address & 0x3) {
+    case 0: value = (current & 0x00FFFFFF) | (t >> 24); break;
+    case 1: value = (current & 0x0000FFFF) | (t >> 16); break;
+    case 2: value = (current & 0x000000FF) | (t >> 8); break;
+    case 3: value = (current & 0x00000000) | t; break;
+    }
+    cpu.store32(address & ~0x3, value);
+}
+
 void InstructionSet::SW(CPU& cpu, Instruction instruction)
 {
     if (cpu.m_SR & 0x10000)
@@ -682,6 +739,66 @@ void InstructionSet::SW(CPU& cpu, Instruction instruction)
         cpu.store32(address, value);
     else
         cpu.exception(CPU::Expception::StoreAddressError);
+}
+
+void InstructionSet::SWR(CPU& cpu, Instruction instruction)
+{
+    if (cpu.m_SR & 0x10000)
+        return; // isolated cache bit is set
+
+    uint32_t imm = instruction.imm_se();
+    uint32_t t = cpu.getReg(instruction.regT());
+    uint32_t s = cpu.getReg(instruction.regS());
+    uint32_t address = s + imm;
+    uint32_t current = cpu.load32(address & ~0x3);
+    uint32_t value = 0xDEADBEEF;
+    switch (address & 0x3) {
+    case 0: value = (current & 0x00000000) | t; break;
+    case 1: value = (current & 0xFF000000) | (t << 8); break;
+    case 2: value = (current & 0xFFFF0000) | (t << 16); break;
+    case 3: value = (current & 0xFFFFFF00) | (t << 24); break;
+    }
+    cpu.store32(address & ~0x3, value);
+}
+
+void InstructionSet::LWC0(CPU& cpu, Instruction /*instruction*/)
+{
+    cpu.exception(CPU::Expception::CoprocessorError);
+}
+
+void InstructionSet::LWC1(CPU& cpu, Instruction /*instruction*/)
+{
+    cpu.exception(CPU::Expception::CoprocessorError);
+}
+
+void InstructionSet::LWC2(CPU& cpu, Instruction instruction)
+{
+    std::cerr << "Unhandled LWC2\n";
+}
+
+void InstructionSet::LWC3(CPU& cpu, Instruction /*instruction*/)
+{
+    cpu.exception(CPU::Expception::CoprocessorError);
+}
+
+void InstructionSet::SWC0(CPU& cpu, Instruction /*instruction*/)
+{
+    cpu.exception(CPU::Expception::CoprocessorError);
+}
+
+void InstructionSet::SWC1(CPU& cpu, Instruction /*instruction*/)
+{
+    cpu.exception(CPU::Expception::CoprocessorError);
+}
+
+void InstructionSet::SWC2(CPU& cpu, Instruction instruction)
+{
+    std::cerr << "Unhandled SWC2\n";
+}
+
+void InstructionSet::SWC3(CPU& cpu, Instruction /*instruction*/)
+{
+    cpu.exception(CPU::Expception::CoprocessorError);
 }
 
 InstructionSet::InstFuncType InstructionSet::Fns[] = {
@@ -719,32 +836,32 @@ InstructionSet::InstFuncType InstructionSet::Fns[] = {
     invalid, // 0x1F
     LB,      // 0x20
     LH,      // 0x21
-    invalid, // 0x22
+    LWL,     // 0x22
     LW,      // 0x23
     LBU,     // 0x24
     LHU,     // 0x25
-    invalid, // 0x26
+    LWR,     // 0x26
     invalid, // 0x27
     SB,      // 0x28
     SH,      // 0x29
-    invalid, // 0x2A
+    SWL,     // 0x2A
     SW,      // 0x2B
     invalid, // 0x2C
     invalid, // 0x2D
-    invalid, // 0x2E
+    SWR,     // 0x2E
     invalid, // 0x2F
-    invalid, // 0x30
-    invalid, // 0x31
-    invalid, // 0x32
-    invalid, // 0x33
+    LWC0,    // 0x30
+    LWC1,    // 0x31
+    LWC2,    // 0x32
+    LWC3,    // 0x33
     invalid, // 0x34
     invalid, // 0x35
     invalid, // 0x36
     invalid, // 0x37
-    invalid, // 0x38
-    invalid, // 0x39
-    invalid, // 0x3A
-    invalid, // 0x3B
+    SWC0,    // 0x38
+    SWC1,    // 0x39
+    SWC2,    // 0x3A
+    SWC3,    // 0x3B
     invalid, // 0x3C
     invalid, // 0x3D
     invalid, // 0x3E

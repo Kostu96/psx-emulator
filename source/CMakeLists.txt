@@ -3,6 +3,8 @@ set(SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/bios.h
     ${CMAKE_CURRENT_SOURCE_DIR}/cpu.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/cpu.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/dma.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/dma.h
     ${CMAKE_CURRENT_SOURCE_DIR}/instruction_set.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/instruction_set.h
     ${CMAKE_CURRENT_SOURCE_DIR}/memory_map.cpp

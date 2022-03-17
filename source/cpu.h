@@ -16,6 +16,7 @@ private:
         StoreAddressError = 0x5,
         SysCall = 0x8,
         Break = 0x9,
+        IllegallInstruction = 0xA,
         CoprocessorError = 0xB, 
         Overflow = 0xC
     };
