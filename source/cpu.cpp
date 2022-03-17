@@ -5,8 +5,14 @@
 
 void CPU::reset()
 {
+    m_currentPC = 0xDEADBEEF;
     m_PC = 0xBFC00000; // BIOS start
-    m_nextInstruction = 0x0; // NOP
+    m_nextPC = 0xBFC00004;
+    m_SR = 0;
+    m_CAUSE = 0xDEADBEEF;
+    m_EPC = 0xDEADBEEF;
+    m_HI = 0xDEADBEEF;
+    m_LO = 0xDEADBEEF;
     m_inputRegs.reset();
     m_outputRegs.reset();
     m_pendingLoad = { 0, 0 };
@@ -14,9 +20,9 @@ void CPU::reset()
 
 void CPU::runNextInstruction()
 {
-    uint32_t inst = m_nextInstruction;
-    m_nextInstruction = load32(m_PC);
-    m_PC += 4;
+    uint32_t inst = load32(m_PC);
+    m_PC = m_nextPC;
+    m_nextPC += 4;
 
     setReg(m_pendingLoad.reg, m_pendingLoad.value);
     m_pendingLoad = { 0, 0 };

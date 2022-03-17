@@ -23,9 +23,14 @@ private:
     void store16(uint32_t address, uint16_t value) { m_memoryMap.store16(address, value); }
     void store32(uint32_t address, uint32_t value) { m_memoryMap.store32(address, value); }
 
+    uint32_t m_currentPC = 0xDEADBEEF;
     uint32_t m_PC = 0xBFC00000; // BIOS start
-    uint32_t m_nextInstruction = 0x0; // NOP
+    uint32_t m_nextPC = 0xBFC00004;
     uint32_t m_SR = 0;
+    uint32_t m_CAUSE = 0xDEADBEEF;
+    uint32_t m_EPC = 0xDEADBEEF;
+    uint32_t m_HI = 0xDEADBEEF;
+    uint32_t m_LO = 0xDEADBEEF;
     Registers m_inputRegs;
     Registers m_outputRegs;
     Load m_pendingLoad{0, 0};

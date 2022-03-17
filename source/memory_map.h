@@ -24,6 +24,8 @@ private:
 	static const AddressRange CACHE_CONTROL_RANGE;
 	static const AddressRange EXPANSION1_RANGE;
 	static const AddressRange EXPANSION2_RANGE;
+	static const AddressRange IRQ_CONTROL_RANGE;
+	static const AddressRange TIMERS_RANGE;
 	
 	BIOS m_bios;
 	RAM m_ram;

@@ -12,22 +12,55 @@ void InstructionSet::zero(CPU& cpu, Instruction instruction)
 {
     uint32_t subfunction = instruction.subfn();
     switch (subfunction) {
-    case 0b000000:
-        SSL(cpu, instruction);
+    case 0x00:
+        SLL(cpu, instruction);
         break;
-    case 0b001000:
+    case 0x02:
+        SRL(cpu, instruction);
+        break;
+    case 0x03:
+        SRA(cpu, instruction);
+        break;
+    case 0x08:
         JR(cpu, instruction);
         break;
-    case 0b100001:
+    case 0x09:
+        JALR(cpu, instruction);
+        break;
+    case 0x0C:
+        SYSCALL(cpu, instruction);
+        break;
+    case 0x10:
+        MFHI(cpu, instruction);
+        break;
+    case 0x12:
+        MFLO(cpu, instruction);
+        break;
+    case 0x1A:
+        DIV(cpu, instruction);
+        break;
+    case 0x1B:
+        DIVU(cpu, instruction);
+        break;
+    case 0x20:
+        ADD(cpu, instruction);
+        break;
+    case 0x21:
         ADDU(cpu, instruction);
         break;
-    case 0b100100:
+    case 0x23:
+        SUBU(cpu, instruction);
+        break;
+    case 0x24:
         AND(cpu, instruction);
         break;
-    case 0b100101:
+    case 0x25:
         OR(cpu, instruction);
         break;
-    case 0b101011:
+    case 0x2A:
+        SLT(cpu, instruction);
+        break;
+    case 0x2B:
         SLTU(cpu, instruction);
         break;
     default:
@@ -35,7 +68,28 @@ void InstructionSet::zero(CPU& cpu, Instruction instruction)
     }
 }
 
-void InstructionSet::SSL(CPU& cpu, Instruction instruction)
+void InstructionSet::bxxxxx(CPU& cpu, Instruction instruction)
+{
+    uint32_t imm = instruction.imm_se();
+    RegisterIndex s = instruction.regS();
+
+    uint32_t isBGEZ = (instruction.dword >> 16) & 1;
+    bool isLink = (instruction.dword >> 20) & 1;
+
+    int32_t value = cpu.getReg(s);
+    uint32_t test = value < 0;
+    test = test ^ isBGEZ;
+
+    if (test != 0) {
+        if (isLink)
+            cpu.setReg(31, cpu.m_PC);
+
+        cpu.m_nextPC += (imm << 2);
+        cpu.m_nextPC -= 4;
+    }
+}
+
+void InstructionSet::SLL(CPU& cpu, Instruction instruction)
 {
     RegisterIndex source = instruction.regT();
     RegisterIndex target = instruction.regD();
@@ -44,10 +98,100 @@ void InstructionSet::SSL(CPU& cpu, Instruction instruction)
     cpu.setReg(target, value);
 }
 
+void InstructionSet::SRL(CPU& cpu, Instruction instruction)
+{
+    RegisterIndex source = instruction.regT();
+    RegisterIndex target = instruction.regD();
+    uint32_t value = cpu.getReg(source);
+    value >>= instruction.shift();
+    cpu.setReg(target, value);
+}
+
+void InstructionSet::SRA(CPU& cpu, Instruction instruction)
+{
+    RegisterIndex t = instruction.regT();
+    RegisterIndex d = instruction.regD();
+    int32_t value = cpu.getReg(t);
+    value >>= instruction.shift();
+    cpu.setReg(d, value);
+}
+
 void InstructionSet::JR(CPU& cpu, Instruction instruction)
 {
     RegisterIndex s = instruction.regS();
-    cpu.m_PC = cpu.getReg(s);
+    cpu.m_nextPC = cpu.getReg(s);
+}
+
+void InstructionSet::JALR(CPU& cpu, Instruction instruction)
+{
+    RegisterIndex d = instruction.regD();
+    RegisterIndex s = instruction.regS();
+    cpu.setReg(d, cpu.m_nextPC);
+    cpu.m_nextPC = cpu.getReg(s);
+}
+
+void InstructionSet::SYSCALL(CPU& cpu, Instruction instruction)
+{
+    ;
+}
+
+void InstructionSet::MFHI(CPU& cpu, Instruction instruction)
+{
+    RegisterIndex d = instruction.regD();
+    cpu.setReg(d, cpu.m_HI);
+}
+
+void InstructionSet::MFLO(CPU& cpu, Instruction instruction)
+{
+    RegisterIndex d = instruction.regD();
+    cpu.setReg(d, cpu.m_LO);
+}
+
+void InstructionSet::DIV(CPU& cpu, Instruction instruction)
+{
+    RegisterIndex s = instruction.regS();
+    RegisterIndex t = instruction.regT();
+    int32_t n = cpu.getReg(s);
+    int32_t d = cpu.getReg(t);
+    if (d == 0) {
+        // division by 0
+        cpu.m_HI = n;
+        cpu.m_LO = (n >= 0) ? 0xFFFFFFFF : 1;
+    }
+    else if (static_cast<uint32_t>(n) == 0x80000000 && d == -1) {
+        cpu.m_HI = 0;
+        cpu.m_LO = 0x80000000;
+    }
+    else {
+        cpu.m_HI = n % d;
+        cpu.m_LO = n / d;
+    }
+}
+
+void InstructionSet::DIVU(CPU& cpu, Instruction instruction)
+{
+    RegisterIndex s = instruction.regS();
+    RegisterIndex t = instruction.regT();
+    uint32_t n = cpu.getReg(s);
+    uint32_t d = cpu.getReg(t);
+    if (d == 0) {
+        // division by 0
+        cpu.m_HI = n;
+        cpu.m_LO = 0xFFFFFFFF;
+    }
+    else {
+        cpu.m_HI = n % d;
+        cpu.m_LO = n / d;
+    }
+}
+
+void InstructionSet::ADD(CPU& cpu, Instruction instruction)
+{
+    RegisterIndex s = instruction.regS();
+    RegisterIndex t = instruction.regT();
+    RegisterIndex d = instruction.regD();
+    uint32_t value = cpu.getReg(s) + cpu.getReg(t); // TODO: check for overflow
+    cpu.setReg(d, value);
 }
 
 void InstructionSet::ADDU(CPU& cpu, Instruction instruction)
@@ -56,6 +200,16 @@ void InstructionSet::ADDU(CPU& cpu, Instruction instruction)
     RegisterIndex t = instruction.regT();
     RegisterIndex d = instruction.regD();
     uint32_t value = cpu.getReg(s) + cpu.getReg(t);
+    cpu.setReg(d, value);
+}
+
+void InstructionSet::SUBU(CPU& cpu, Instruction instruction)
+{
+    RegisterIndex s = instruction.regS();
+    RegisterIndex t = instruction.regT();
+    RegisterIndex d = instruction.regD();
+
+    uint32_t value = cpu.getReg(s) - cpu.getReg(t);
     cpu.setReg(d, value);
 }
 
@@ -77,6 +231,15 @@ void InstructionSet::OR(CPU& cpu, Instruction instruction)
     cpu.setReg(d, value);
 }
 
+void InstructionSet::SLT(CPU& cpu, Instruction instruction)
+{
+    RegisterIndex d = instruction.regD();
+    RegisterIndex s = instruction.regS();
+    RegisterIndex t = instruction.regT();
+    uint32_t value = static_cast<int32_t>(cpu.getReg(s)) < static_cast<int32_t>(cpu.getReg(t));
+    cpu.setReg(d, value);
+}
+
 void InstructionSet::SLTU(CPU& cpu, Instruction instruction)
 {
     RegisterIndex d = instruction.regD();
@@ -88,12 +251,12 @@ void InstructionSet::SLTU(CPU& cpu, Instruction instruction)
 
 void InstructionSet::J(CPU& cpu, Instruction instruction)
 {
-    cpu.m_PC = (cpu.m_PC & 0xF0000000) | (instruction.imm_jump() << 2); // TODO: move this shift to imm_jump()?
+    cpu.m_nextPC = (cpu.m_nextPC & 0xF0000000) | (instruction.imm_jump() << 2); // TODO: move this shift to imm_jump()?
 }
 
 void InstructionSet::JAL(CPU& cpu, Instruction instruction)
 {
-    cpu.setReg(31, cpu.m_PC);
+    cpu.setReg(31, cpu.m_nextPC);
     J(cpu, instruction);
 }
 
@@ -104,8 +267,8 @@ void InstructionSet::BEQ(CPU& cpu, Instruction instruction)
     RegisterIndex t = instruction.regT();
 
     if (cpu.getReg(s) == cpu.getReg(t)) {
-        cpu.m_PC += (imm << 2);
-        cpu.m_PC -= 4;
+        cpu.m_nextPC += (imm << 2);
+        cpu.m_nextPC -= 4;
     }
 }
 
@@ -116,8 +279,32 @@ void InstructionSet::BNE(CPU& cpu, Instruction instruction)
     RegisterIndex t = instruction.regT();
 
     if (cpu.getReg(s) != cpu.getReg(t)) {
-        cpu.m_PC += (imm << 2);
-        cpu.m_PC -= 4;
+        cpu.m_nextPC += (imm << 2);
+        cpu.m_nextPC -= 4;
+    }
+}
+
+void InstructionSet::BLEZ(CPU& cpu, Instruction instruction)
+{
+    uint32_t imm = instruction.imm_se();
+    RegisterIndex s = instruction.regS();
+    int32_t value = cpu.getReg(s);
+
+    if (value <= 0) {
+        cpu.m_nextPC += (imm << 2);
+        cpu.m_nextPC -= 4;
+    }
+}
+
+void InstructionSet::BGTZ(CPU& cpu, Instruction instruction)
+{
+    uint32_t imm = instruction.imm_se();
+    RegisterIndex s = instruction.regS();
+    int32_t value = cpu.getReg(s);
+
+    if (value  > 0) {
+        cpu.m_nextPC += (imm << 2);
+        cpu.m_nextPC -= 4;
     }
 }
 
@@ -137,6 +324,26 @@ void InstructionSet::ADDIU(CPU& cpu, Instruction instruction)
     RegisterIndex source = instruction.regS();
     uint32_t value = cpu.getReg(source) + instruction.imm_se();
     cpu.setReg(target, value);
+}
+
+void InstructionSet::SLTI(CPU& cpu, Instruction instruction)
+{
+    int32_t imm = instruction.imm_se();
+    RegisterIndex s = instruction.regS();
+    RegisterIndex t = instruction.regT();
+
+    uint32_t value = static_cast<int32_t>(cpu.getReg(s)) < imm;
+    cpu.setReg(t, value);
+}
+
+void InstructionSet::SLTIU(CPU& cpu, Instruction instruction)
+{
+    uint32_t imm = instruction.imm_se();
+    RegisterIndex s = instruction.regS();
+    RegisterIndex t = instruction.regT();
+
+    uint32_t value = cpu.getReg(s) < imm;
+    cpu.setReg(t, value);
 }
 
 void InstructionSet::ANDI(CPU& cpu, Instruction instruction)
@@ -189,7 +396,10 @@ void InstructionSet::MFC0(CPU& cpu, Instruction instruction)
         value = cpu.m_SR;
         break;
     case 13:
-        std::cerr << "Unhandled read from CAUSE register\n";
+        value = cpu.m_CAUSE;
+        break;
+    case 14:
+        value = cpu.m_EPC;
         break;
     default:
         std::cerr << "Unhandled MFC0 instruction\n";
@@ -253,6 +463,19 @@ void InstructionSet::LW(CPU& cpu, Instruction instruction)
     cpu.m_pendingLoad = { t, value };
 }
 
+void InstructionSet::LBU(CPU& cpu, Instruction instruction)
+{
+    if (cpu.m_SR & 0x10000)
+        return; // isolated cache bit is set
+
+    uint32_t imm = instruction.imm_se();
+    RegisterIndex t = instruction.regT();
+    RegisterIndex s = instruction.regS();
+    uint32_t address = cpu.getReg(s) + imm;
+    uint32_t value = cpu.load8(address);
+    cpu.m_pendingLoad = { t, value };
+}
+
 void InstructionSet::SB(CPU& cpu, Instruction instruction)
 {
     if (cpu.m_SR & 0x10000)
@@ -293,68 +516,68 @@ void InstructionSet::SW(CPU& cpu, Instruction instruction)
 }
 
 InstructionSet::InstFuncType InstructionSet::Fns[] = {
-    zero,    // 000000
-    invalid, // 000001
-    J,       // 000010
-    JAL,     // 000011
-    BEQ,     // 000100
-    BNE,     // 000101
-    invalid, // 000110
-    invalid, // 000111
-    ADDI,    // 001000
-    ADDIU,   // 001001
-    invalid, // 001010
-    invalid, // 001011
-    ANDI,    // 001100
-    ORI,     // 001101
-    invalid, // 001110
-    LUI,     // 001111
-    cop0,    // 010000
-    invalid, // 010001
-    invalid, // 010010
-    invalid, // 010011
-    invalid, // 010100
-    invalid, // 010101
-    invalid, // 010110
-    invalid, // 010111
-    invalid, // 011000
-    invalid, // 011001
-    invalid, // 011010
-    invalid, // 011011
-    invalid, // 011100
-    invalid, // 011101
-    invalid, // 011110
-    invalid, // 011111
-    LB,      // 100000
-    invalid, // 100001
-    invalid, // 100010
-    LW,      // 100011
-    invalid, // 100100
-    invalid, // 100101
-    invalid, // 100110
-    invalid, // 100111
-    SB,      // 101000
-    SH,      // 101001
-    invalid, // 101010
-    SW,      // 101011
-    invalid, // 101100
-    invalid, // 101101
-    invalid, // 101110
-    invalid, // 101111
-    invalid, // 110000
-    invalid, // 110001
-    invalid, // 110010
-    invalid, // 110011
-    invalid, // 110100
-    invalid, // 110101
-    invalid, // 110110
-    invalid, // 110111
-    invalid, // 111000
-    invalid, // 111001
-    invalid, // 111010
-    invalid, // 111011
-    invalid, // 111100
-    invalid, // 111101
-    invalid, // 111110
-    invalid  // 111111
+    zero,    // 0x00
+    bxxxxx,  // 0x01
+    J,       // 0x02
+    JAL,     // 0x03
+    BEQ,     // 0x04
+    BNE,     // 0x05
+    BLEZ,    // 0x06
+    BGTZ,    // 0x07
+    ADDI,    // 0x08
+    ADDIU,   // 0x09
+    SLTI,    // 0x0A
+    SLTIU,   // 0x0B
+    ANDI,    // 0x0C
+    ORI,     // 0x0D
+    invalid, // 0x0E
+    LUI,     // 0x0F
+    cop0,    // 0x10
+    invalid, // 0x11
+    invalid, // 0x12
+    invalid, // 0x13
+    invalid, // 0x14
+    invalid, // 0x15
+    invalid, // 0x16
+    invalid, // 0x17
+    invalid, // 0x18
+    invalid, // 0x19
+    invalid, // 0x1A
+    invalid, // 0x1B
+    invalid, // 0x1C
+    invalid, // 0x1D
+    invalid, // 0x1E
+    invalid, // 0x1F
+    LB,      // 0x20
+    invalid, // 0x21
+    invalid, // 0x22
+    LW,      // 0x23
+    LBU,     // 0x24
+    invalid, // 0x25
+    invalid, // 0x26
+    invalid, // 0x27
+    SB,      // 0x28
+    SH,      // 0x29
+    invalid, // 0x2A
+    SW,      // 0x2B
+    invalid, // 0x2C
+    invalid, // 0x2D
+    invalid, // 0x2E
+    invalid, // 0x2F
+    invalid, // 0x30
+    invalid, // 0x31
+    invalid, // 0x32
+    invalid, // 0x33
+    invalid, // 0x34
+    invalid, // 0x35
+    invalid, // 0x36
+    invalid, // 0x37
+    invalid, // 0x38
+    invalid, // 0x39
+    invalid, // 0x3A
+    invalid, // 0x3B
+    invalid, // 0x3C
+    invalid, // 0x3D
+    invalid, // 0x3E
+    invalid  // 0x3F
 };

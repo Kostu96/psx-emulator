@@ -22,8 +22,10 @@ uint8_t MemoryMap::load8(uint32_t address) const
 
 uint32_t MemoryMap::load32(uint32_t address) const
 {
-    if (address % 4 != 0)
+    if (address % 4 != 0) {
         std::cerr << "Unaligned access when loading from: " << std::hex << address << std::dec << '\n';
+        abort();
+    }
 
     uint32_t absAddr = maskRegion(address);
     uint32_t offset;
@@ -34,15 +36,17 @@ uint32_t MemoryMap::load32(uint32_t address) const
     if (RAM_RANGE.contains(absAddr, offset))
         return m_ram.load32(offset);
 
+    if (IRQ_CONTROL_RANGE.contains(absAddr, offset)) {
+        std::cerr << "Temp handled load from IRQ_CONTROL\n";
+        return 0; // TODO: temp until interrupt are implemented
+    }
+
     std::cerr << "Unhandled access when loading from: " << std::hex << address << std::dec << '\n';
     return 0xDEADBEEF;
 }
 
 void MemoryMap::store8(uint32_t address, uint16_t value)
 {
-    if (address % 2 != 0)
-        std::cerr << "Unaligned access when storing to: " << std::hex << address << std::dec << '\n';
-
     uint32_t absAddr = maskRegion(address);
     uint32_t offset;
 
@@ -61,8 +65,10 @@ void MemoryMap::store8(uint32_t address, uint16_t value)
 
 void MemoryMap::store16(uint32_t address, uint16_t value)
 {
-    if (address % 2 != 0)
+    if (address % 2 != 0) {
         std::cerr << "Unaligned access when storing to: " << std::hex << address << std::dec << '\n';
+        abort();
+    }
 
     uint32_t absAddr = maskRegion(address);
     uint32_t offset;
@@ -72,13 +78,20 @@ void MemoryMap::store16(uint32_t address, uint16_t value)
         return; // Ignore SPU for now
     }
 
+    if (TIMERS_RANGE.contains(absAddr, offset)) {
+        std::cerr << "Unhandled write to TIMERS: " << std::hex << address << std::dec << '\n';
+        return; // Ignore TIMERS for now
+    }
+
     std::cerr << "Unhandled access when storing to: " << std::hex << address << std::dec << '\n';
 }
 
 void MemoryMap::store32(uint32_t address, uint32_t value)
 {
-    if (address % 4 != 0)
+    if (address % 4 != 0) {
         std::cerr << "Unaligned access when storing to: " << std::hex << address << std::dec << '\n';
+        abort();
+    }
 
     uint32_t absAddr = maskRegion(address);
     uint32_t offset;
@@ -86,6 +99,11 @@ void MemoryMap::store32(uint32_t address, uint32_t value)
     if (RAM_RANGE.contains(absAddr, offset)) {
         m_ram.store32(offset, value);
         return;
+    }
+
+    if (IRQ_CONTROL_RANGE.contains(absAddr, offset)) {
+        std::cerr << "Unhandled write to IRQ_CONTROL: " << std::hex << address << std::dec << '\n';
+        return; // Ignore stores to IRQ_CONTROL
     }
 
     if (CACHE_CONTROL_RANGE.contains(absAddr, offset)) {
@@ -96,10 +114,16 @@ void MemoryMap::store32(uint32_t address, uint32_t value)
     if (SYS_CONTROL_RANGE.contains(absAddr, offset)) {
         switch (offset) {
         case 0:
-            std::cerr << "Write to expansion 1 base address!\n";
+            if (value != 0x1F000000) {
+                std::cerr << "Bad write to expansion 1 base address!\n";
+                abort();
+            }
             break;
         case 4:
-            std::cerr << "Write to expansion 2 base address!\n";
+            if (value != 0x1F802000) {
+                std::cerr << "Bad write to expansion 2 base address!\n";
+                abort();
+            }
             break;
         default:
             std::cerr << "Unhandled write to SYS_CONTROL: " << std::hex << address << std::dec << '\n';
@@ -139,3 +163,5 @@ const AddressRange MemoryMap::RAM_SIZE_RANGE{ 0x1F801060, 4 };
 const AddressRange MemoryMap::CACHE_CONTROL_RANGE{ 0xFFFE0130, 4 };
 const AddressRange MemoryMap::EXPANSION1_RANGE{ 0x1F000000, 8 * 1024 * 1024 };
 const AddressRange MemoryMap::EXPANSION2_RANGE{ 0x1F802000, 66 };
+const AddressRange MemoryMap::IRQ_CONTROL_RANGE{ 0x1F801070, 8 };
+const AddressRange MemoryMap::TIMERS_RANGE{ 0x1F801100, 48 };
