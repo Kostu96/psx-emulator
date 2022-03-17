@@ -36,6 +36,11 @@ uint32_t MemoryMap::load32(uint32_t address) const
     if (RAM_RANGE.contains(absAddr, offset))
         return m_ram.load32(offset);
 
+    if (DMA_RANGE.contains(absAddr, offset)) {
+        std::cerr << "Temp handled load from DMA\n";
+        return 0; // TODO: temp until DMA is implemented
+    }
+
     if (IRQ_CONTROL_RANGE.contains(absAddr, offset)) {
         std::cerr << "Temp handled load from IRQ_CONTROL\n";
         return 0; // TODO: temp until interrupt are implemented
@@ -106,6 +111,11 @@ void MemoryMap::store32(uint32_t address, uint32_t value)
         return;
     }
 
+    if (DMA_RANGE.contains(absAddr, offset)) {
+        std::cerr << "Unhandled write to DMA\n";
+        return; // Ignore DMA for now
+    }
+
     if (IRQ_CONTROL_RANGE.contains(absAddr, offset)) {
         std::cerr << "Unhandled write to IRQ_CONTROL: " << std::hex << address << std::dec << '\n';
         return; // Ignore stores to IRQ_CONTROL
@@ -170,3 +180,4 @@ const AddressRange MemoryMap::EXPANSION1_RANGE{ 0x1F000000, 8 * 1024 * 1024 };
 const AddressRange MemoryMap::EXPANSION2_RANGE{ 0x1F802000, 66 };
 const AddressRange MemoryMap::IRQ_CONTROL_RANGE{ 0x1F801070, 8 };
 const AddressRange MemoryMap::TIMERS_RANGE{ 0x1F801100, 48 };
+const AddressRange MemoryMap::DMA_RANGE{ 0x1F801080, 128 };

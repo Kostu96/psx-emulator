@@ -5,7 +5,7 @@
 class CPU
 {
 public:
-	CPU() = default;
+    CPU() = default;
     void reset();
     void runNextInstruction();
     uint32_t getReg(RegisterIndex index) const { return m_inputRegs.get(index); }
