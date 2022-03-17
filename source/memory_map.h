@@ -8,6 +8,7 @@ public:
 	MemoryMap() = default;
 
 	uint8_t load8(uint32_t address) const;
+	uint16_t load16(uint32_t address) const;
 	uint32_t load32(uint32_t address) const;
 	void store8(uint32_t address, uint16_t value);
 	void store16(uint32_t address, uint16_t value);
@@ -27,6 +28,7 @@ private:
 	static const AddressRange IRQ_CONTROL_RANGE;
 	static const AddressRange TIMERS_RANGE;
 	static const AddressRange DMA_RANGE;
+	static const AddressRange GPU_RANGE;
 	
 	BIOS m_bios;
 	RAM m_ram;

@@ -17,6 +17,14 @@ uint8_t RAM::load8(uint32_t offset) const
     return m_data[offset];
 }
 
+uint16_t RAM::load16(uint32_t offset) const
+{
+    uint8_t b0 = m_data[offset];
+    uint8_t b1 = m_data[offset + 1];
+
+    return b0 | (b1 << 8);
+}
+
 uint32_t RAM::load32(uint32_t offset) const
 {
     uint8_t b0 = m_data[offset];
