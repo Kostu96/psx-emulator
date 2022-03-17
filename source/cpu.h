@@ -11,11 +11,19 @@ public:
     uint32_t getReg(RegisterIndex index) const { return m_inputRegs.get(index); }
     void setReg(RegisterIndex index, uint32_t value) { m_outputRegs.set(index, value); }
 private:
+    enum class Expception {
+        LoadAddressError = 0x4,
+        StoreAddressError = 0x5,
+        SysCall  = 0x8,
+        Overflow = 0xC
+    };
+
     struct Load {
         RegisterIndex reg;
         uint32_t value;
     };
 
+    void exception(Expception cause);
     void decodeAndExecute(Instruction instruction);
     uint8_t load8(uint32_t address) { return m_memoryMap.load8(address); }
     uint32_t load32(uint32_t address) { return m_memoryMap.load32(address); }
@@ -33,8 +41,10 @@ private:
     uint32_t m_LO = 0xDEADBEEF;
     Registers m_inputRegs;
     Registers m_outputRegs;
-    Load m_pendingLoad{0, 0};
     MemoryMap m_memoryMap;
+    Load m_pendingLoad{0, 0};
+    bool m_branch = false;
+    bool m_delaySlot = false;
 
     friend class InstructionSet;
 };

@@ -19,7 +19,9 @@ private:
 	static void JALR(CPU& cpu, Instruction instruction);
 	static void SYSCALL(CPU& cpu, Instruction instruction);
 	static void MFHI(CPU& cpu, Instruction instruction);
+	static void MTHI(CPU& cpu, Instruction instruction);
 	static void MFLO(CPU& cpu, Instruction instruction);
+	static void MTLO(CPU& cpu, Instruction instruction);
 	static void DIV(CPU& cpu, Instruction instruction);
 	static void DIVU(CPU& cpu, Instruction instruction);
 	static void ADD(CPU& cpu, Instruction instruction);
@@ -45,6 +47,7 @@ private:
 	static void cop0(CPU& cpu, Instruction instruction);
 	static void MFC0(CPU& cpu, Instruction instruction);
 	static void MTC0(CPU& cpu, Instruction instruction);
+	static void RFE(CPU& cpu, Instruction instruction);
 	static void LB(CPU& cpu, Instruction instruction);
 	static void LW(CPU& cpu, Instruction instruction);
 	static void LBU(CPU& cpu, Instruction instruction);

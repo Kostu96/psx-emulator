@@ -32,6 +32,15 @@ void RAM::store8(uint32_t offset, uint8_t value)
     m_data[offset] = value;
 }
 
+void RAM::store16(uint32_t offset, uint16_t value)
+{
+    uint8_t b0 = value & 0xFF;
+    uint8_t b1 = (value >> 8) & 0xFF;
+
+    m_data[offset] = b0;
+    m_data[offset + 1] = b1;
+}
+
 void RAM::store32(uint32_t offset, uint32_t value)
 {
     uint8_t b0 = value & 0xFF;

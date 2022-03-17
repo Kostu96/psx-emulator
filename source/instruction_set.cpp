@@ -10,59 +10,28 @@ void InstructionSet::invalid(CPU& cpu, Instruction instruction)
 
 void InstructionSet::zero(CPU& cpu, Instruction instruction)
 {
+    // TODO: change this to array:
     uint32_t subfunction = instruction.subfn();
     switch (subfunction) {
-    case 0x00:
-        SLL(cpu, instruction);
-        break;
-    case 0x02:
-        SRL(cpu, instruction);
-        break;
-    case 0x03:
-        SRA(cpu, instruction);
-        break;
-    case 0x08:
-        JR(cpu, instruction);
-        break;
-    case 0x09:
-        JALR(cpu, instruction);
-        break;
-    case 0x0C:
-        SYSCALL(cpu, instruction);
-        break;
-    case 0x10:
-        MFHI(cpu, instruction);
-        break;
-    case 0x12:
-        MFLO(cpu, instruction);
-        break;
-    case 0x1A:
-        DIV(cpu, instruction);
-        break;
-    case 0x1B:
-        DIVU(cpu, instruction);
-        break;
-    case 0x20:
-        ADD(cpu, instruction);
-        break;
-    case 0x21:
-        ADDU(cpu, instruction);
-        break;
-    case 0x23:
-        SUBU(cpu, instruction);
-        break;
-    case 0x24:
-        AND(cpu, instruction);
-        break;
-    case 0x25:
-        OR(cpu, instruction);
-        break;
-    case 0x2A:
-        SLT(cpu, instruction);
-        break;
-    case 0x2B:
-        SLTU(cpu, instruction);
-        break;
+    case 0x00: SLL(cpu, instruction);  break;
+    case 0x02: SRL(cpu, instruction);  break;
+    case 0x03: SRA(cpu, instruction);  break;
+    case 0x08: JR(cpu, instruction);   break;
+    case 0x09: JALR(cpu, instruction); break;
+    case 0x0C: SYSCALL(cpu, instruction); break;
+    case 0x10: MFHI(cpu, instruction); break;
+    case 0x11: MTHI(cpu, instruction); break;
+    case 0x12: MFLO(cpu, instruction); break;
+    case 0x13: MTLO(cpu, instruction); break;
+    case 0x1A: DIV(cpu, instruction);  break;
+    case 0x1B: DIVU(cpu, instruction); break;
+    case 0x20: ADD(cpu, instruction);  break;
+    case 0x21: ADDU(cpu, instruction); break;
+    case 0x23: SUBU(cpu, instruction); break;
+    case 0x24: AND(cpu, instruction);  break;
+    case 0x25: OR(cpu, instruction);   break;
+    case 0x2A: SLT(cpu, instruction);  break;
+    case 0x2B: SLTU(cpu, instruction); break;
     default:
         std::cerr << "Unhandled zero instruction: " << std::hex << instruction.subfn() << std::dec << '\n';
     }
@@ -87,6 +56,7 @@ void InstructionSet::bxxxxx(CPU& cpu, Instruction instruction)
         cpu.m_nextPC += (imm << 2);
         cpu.m_nextPC -= 4;
     }
+    cpu.m_branch = true;
 }
 
 void InstructionSet::SLL(CPU& cpu, Instruction instruction)
@@ -120,6 +90,7 @@ void InstructionSet::JR(CPU& cpu, Instruction instruction)
 {
     RegisterIndex s = instruction.regS();
     cpu.m_nextPC = cpu.getReg(s);
+    cpu.m_branch = true;
 }
 
 void InstructionSet::JALR(CPU& cpu, Instruction instruction)
@@ -128,11 +99,12 @@ void InstructionSet::JALR(CPU& cpu, Instruction instruction)
     RegisterIndex s = instruction.regS();
     cpu.setReg(d, cpu.m_nextPC);
     cpu.m_nextPC = cpu.getReg(s);
+    cpu.m_branch = true;
 }
 
-void InstructionSet::SYSCALL(CPU& cpu, Instruction instruction)
+void InstructionSet::SYSCALL(CPU& cpu, Instruction /*instruction*/)
 {
-    ;
+    cpu.exception(CPU::Expception::SysCall);
 }
 
 void InstructionSet::MFHI(CPU& cpu, Instruction instruction)
@@ -141,10 +113,22 @@ void InstructionSet::MFHI(CPU& cpu, Instruction instruction)
     cpu.setReg(d, cpu.m_HI);
 }
 
+void InstructionSet::MTHI(CPU& cpu, Instruction instruction)
+{
+    RegisterIndex s = instruction.regS();
+    cpu.m_HI = cpu.getReg(s);
+}
+
 void InstructionSet::MFLO(CPU& cpu, Instruction instruction)
 {
     RegisterIndex d = instruction.regD();
     cpu.setReg(d, cpu.m_LO);
+}
+
+void InstructionSet::MTLO(CPU& cpu, Instruction instruction)
+{
+    RegisterIndex s = instruction.regS();
+    cpu.m_LO = cpu.getReg(s);
 }
 
 void InstructionSet::DIV(CPU& cpu, Instruction instruction)
@@ -190,8 +174,14 @@ void InstructionSet::ADD(CPU& cpu, Instruction instruction)
     RegisterIndex s = instruction.regS();
     RegisterIndex t = instruction.regT();
     RegisterIndex d = instruction.regD();
-    uint32_t value = cpu.getReg(s) + cpu.getReg(t); // TODO: check for overflow
-    cpu.setReg(d, value);
+    int32_t a = cpu.getReg(s);
+    int32_t b = cpu.getReg(t);
+    uint32_t value = a + b;
+    if (a > 0 && b > 0 && value < 0 ||
+        a < 0 && b < 0 && value > 0)
+        cpu.exception(CPU::Expception::Overflow);
+    else
+        cpu.setReg(d, value);
 }
 
 void InstructionSet::ADDU(CPU& cpu, Instruction instruction)
@@ -252,12 +242,14 @@ void InstructionSet::SLTU(CPU& cpu, Instruction instruction)
 void InstructionSet::J(CPU& cpu, Instruction instruction)
 {
     cpu.m_nextPC = (cpu.m_nextPC & 0xF0000000) | (instruction.imm_jump() << 2); // TODO: move this shift to imm_jump()?
+    cpu.m_branch = true;
 }
 
 void InstructionSet::JAL(CPU& cpu, Instruction instruction)
 {
     cpu.setReg(31, cpu.m_nextPC);
     J(cpu, instruction);
+    // cpu.m_branch = true; - redundant
 }
 
 void InstructionSet::BEQ(CPU& cpu, Instruction instruction)
@@ -270,6 +262,7 @@ void InstructionSet::BEQ(CPU& cpu, Instruction instruction)
         cpu.m_nextPC += (imm << 2);
         cpu.m_nextPC -= 4;
     }
+    cpu.m_branch = true;
 }
 
 void InstructionSet::BNE(CPU& cpu, Instruction instruction)
@@ -282,6 +275,7 @@ void InstructionSet::BNE(CPU& cpu, Instruction instruction)
         cpu.m_nextPC += (imm << 2);
         cpu.m_nextPC -= 4;
     }
+    cpu.m_branch = true;
 }
 
 void InstructionSet::BLEZ(CPU& cpu, Instruction instruction)
@@ -294,6 +288,7 @@ void InstructionSet::BLEZ(CPU& cpu, Instruction instruction)
         cpu.m_nextPC += (imm << 2);
         cpu.m_nextPC -= 4;
     }
+    cpu.m_branch = true;
 }
 
 void InstructionSet::BGTZ(CPU& cpu, Instruction instruction)
@@ -306,16 +301,21 @@ void InstructionSet::BGTZ(CPU& cpu, Instruction instruction)
         cpu.m_nextPC += (imm << 2);
         cpu.m_nextPC -= 4;
     }
+    cpu.m_branch = true;
 }
 
 void InstructionSet::ADDI(CPU& cpu, Instruction instruction)
 {
-    int32_t imm = instruction.imm_se();
     RegisterIndex t = instruction.regT();
     RegisterIndex s = instruction.regS();
-    int32_t value = cpu.getReg(s);
-    value += imm; // TODO: check for overflow
-    cpu.setReg(t, value);
+    int32_t a = cpu.getReg(s);
+    int32_t b = instruction.imm_se();
+    uint32_t value = a + b;
+    if (a > 0 && b > 0 && value < 0 ||
+        a < 0 && b < 0 && value > 0)
+        cpu.exception(CPU::Expception::Overflow);
+    else
+        cpu.setReg(t, value);
 }
 
 void InstructionSet::ADDIU(CPU& cpu, Instruction instruction)
@@ -374,12 +374,9 @@ void InstructionSet::cop0(CPU& cpu, Instruction instruction)
 {
     uint32_t copfn = instruction.copfn();
     switch (copfn) {
-    case 0b00000:
-        MFC0(cpu, instruction);
-        break;
-    case 0b00100:
-        MTC0(cpu, instruction);
-        break;
+    case 0x00: MFC0(cpu, instruction); break;
+    case 0x04: MTC0(cpu, instruction); break;
+    case 0x10: RFE(cpu, instruction);  break;
     default:
         std::cerr << "Unhandled cop0 instruction: " << std::hex << instruction.copfn() << std::dec << '\n';
     }
@@ -437,6 +434,18 @@ void InstructionSet::MTC0(CPU& cpu, Instruction instruction)
     }
 }
 
+void InstructionSet::RFE(CPU& cpu, Instruction instruction)
+{
+    if ((instruction.dword & 0x3F) != 0x10) {
+        std::cerr << "Invalid COP0 instruction: " << instruction.dword << '\n';
+        abort();
+    }
+
+    uint32_t mode = cpu.m_SR & 0x3F;
+    cpu.m_SR &= ~0x3F;
+    cpu.m_SR |= mode >> 2;
+}
+
 void InstructionSet::LB(CPU& cpu, Instruction instruction)
 {
     if (cpu.m_SR & 0x10000)
@@ -460,7 +469,11 @@ void InstructionSet::LW(CPU& cpu, Instruction instruction)
     RegisterIndex s = instruction.regS();
     uint32_t address = cpu.getReg(s) + imm;
     uint32_t value = cpu.load32(address);
-    cpu.m_pendingLoad = { t, value };
+
+    if (address % 2 == 0)
+        cpu.m_pendingLoad = { t, value };
+    else
+        cpu.exception(CPU::Expception::LoadAddressError);
 }
 
 void InstructionSet::LBU(CPU& cpu, Instruction instruction)
@@ -499,7 +512,11 @@ void InstructionSet::SH(CPU& cpu, Instruction instruction)
     RegisterIndex s = instruction.regS();
     uint32_t address = cpu.getReg(s) + imm;
     uint16_t value = cpu.getReg(t);
-    cpu.store16(address, value);
+
+    if (address % 2 == 0)
+        cpu.store16(address, value);
+    else
+        cpu.exception(CPU::Expception::StoreAddressError);
 }
 
 void InstructionSet::SW(CPU& cpu, Instruction instruction)
@@ -512,7 +529,11 @@ void InstructionSet::SW(CPU& cpu, Instruction instruction)
     RegisterIndex s = instruction.regS();
     uint32_t address = cpu.getReg(s) + imm;
     uint32_t value = cpu.getReg(t);
-    cpu.store32(address, value);
+    
+    if (address % 4 == 0)
+        cpu.store32(address, value);
+    else
+        cpu.exception(CPU::Expception::StoreAddressError);
 }
 
 InstructionSet::InstFuncType InstructionSet::Fns[] = {

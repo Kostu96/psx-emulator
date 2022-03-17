@@ -73,6 +73,11 @@ void MemoryMap::store16(uint32_t address, uint16_t value)
     uint32_t absAddr = maskRegion(address);
     uint32_t offset;
 
+    if (RAM_RANGE.contains(absAddr, offset)) {
+        m_ram.store16(offset, value);
+        return;
+    }
+
     if (SPU_RANGE.contains(absAddr, offset)) {
         std::cerr << "Unhandled write to SPU: " << std::hex << address << std::dec << '\n';
         return; // Ignore SPU for now
