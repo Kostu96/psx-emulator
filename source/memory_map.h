@@ -7,7 +7,8 @@ class MemoryMap
 public:
 	MemoryMap() = default;
 
-	uint32_t load32(uint32_t offset) const;
+	uint8_t load8(uint32_t address) const;
+	uint32_t load32(uint32_t address) const;
 	void store8(uint32_t address, uint16_t value);
 	void store16(uint32_t address, uint16_t value);
 	void store32(uint32_t address, uint32_t value);
@@ -21,6 +22,7 @@ private:
 	static const AddressRange SPU_RANGE;
 	static const AddressRange RAM_SIZE_RANGE;
 	static const AddressRange CACHE_CONTROL_RANGE;
+	static const AddressRange EXPANSION1_RANGE;
 	static const AddressRange EXPANSION2_RANGE;
 	
 	BIOS m_bios;

@@ -12,6 +12,11 @@ RAM::~RAM()
     delete[] m_data;
 }
 
+uint8_t RAM::load8(uint32_t offset) const
+{
+    return m_data[offset];
+}
+
 uint32_t RAM::load32(uint32_t offset) const
 {
     uint8_t b0 = m_data[offset];
@@ -20,6 +25,11 @@ uint32_t RAM::load32(uint32_t offset) const
     uint8_t b3 = m_data[offset + 3];
 
     return b0 | (b1 << 8) | (b2 << 16) | (b3 << 24);
+}
+
+void RAM::store8(uint32_t offset, uint8_t value)
+{
+    m_data[offset] = value;
 }
 
 void RAM::store32(uint32_t offset, uint32_t value)
@@ -34,4 +44,3 @@ void RAM::store32(uint32_t offset, uint32_t value)
     m_data[offset + 2] = b2;
     m_data[offset + 3] = b3;
 }
-

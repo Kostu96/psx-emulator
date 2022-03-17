@@ -32,6 +32,11 @@ BIOS::~BIOS()
     delete[] m_data;
 }
 
+uint8_t BIOS::load8(uint32_t offset) const
+{
+    return m_data[offset];
+}
+
 uint32_t BIOS::load32(uint32_t offset) const
 {
     uint8_t b0 = m_data[offset];
