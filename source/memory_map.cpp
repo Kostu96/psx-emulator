@@ -34,7 +34,7 @@ uint16_t MemoryMap::load16(uint32_t address) const
         return m_ram.load16(offset);
 
     if (SPU_RANGE.contains(absAddr, offset)) {
-        std::cerr << "Temp handled read from SPU\n";
+        //std::cerr << "Temp handled read from SPU\n";
         return 0; // Temp
     }
 
@@ -44,7 +44,7 @@ uint16_t MemoryMap::load16(uint32_t address) const
     }
 
     std::cerr << "Unhandled access when loading from: " << std::hex << address << std::dec << '\n';
-    return 0xDEADBEEF;
+    return 0xDEAD;
 }
 
 uint32_t MemoryMap::load32(uint32_t address) const
@@ -80,11 +80,16 @@ uint32_t MemoryMap::load32(uint32_t address) const
         return 0; // TODO: temp
     }
 
+    if (TIMERS_RANGE.contains(absAddr, offset)) {
+        std::cerr << "Temp handled load from TIMERS\n";
+        return 0; // TODO: temp
+    }
+
     std::cerr << "Unhandled access when loading from: " << std::hex << address << std::dec << '\n';
     return 0xDEADBEEF;
 }
 
-void MemoryMap::store8(uint32_t address, uint16_t value)
+void MemoryMap::store8(uint32_t address, uint8_t value)
 {
     uint32_t absAddr = maskRegion(address);
     uint32_t offset;
@@ -118,7 +123,7 @@ void MemoryMap::store16(uint32_t address, uint16_t value)
     }
 
     if (SPU_RANGE.contains(absAddr, offset)) {
-        std::cerr << "Unhandled write to SPU: " << std::hex << address << std::dec << '\n';
+        //std::cerr << "Unhandled write to SPU: " << std::hex << address << std::dec << '\n';
         return; // Ignore SPU for now
     }
 
@@ -159,8 +164,8 @@ void MemoryMap::store32(uint32_t address, uint32_t value)
     }
 
     if (GPU_RANGE.contains(absAddr, offset)) {
-        std::cerr << "Unhandled write to GPU\n";
-        return; // Ignore for now
+        m_gpu.store32(offset, value);
+        return;
     }
 
     if (IRQ_CONTROL_RANGE.contains(absAddr, offset)) {
@@ -178,7 +183,7 @@ void MemoryMap::store32(uint32_t address, uint32_t value)
         return; // Ignore stores to CACHE_CONTROL
     }
 
-    if (SYS_CONTROL_RANGE.contains(absAddr, offset)) {
+    if (MEMORY_CONTROL_RANGE.contains(absAddr, offset)) {
         switch (offset) {
         case 0:
             if (value != 0x1F000000) {
@@ -193,7 +198,7 @@ void MemoryMap::store32(uint32_t address, uint32_t value)
             }
             break;
         default:
-            std::cerr << "Unhandled write to SYS_CONTROL: " << std::hex << address << std::dec << '\n';
+            std::cerr << "Unhandled write to MEMORY_CONTROL: " << std::hex << address << std::dec << '\n';
         }
         return; // Ignore stores to MEMORY_CONTROL
     }
@@ -314,14 +319,14 @@ const uint32_t MemoryMap::REGION_MASK[] = {
     0xFFFFFFFF, 0xFFFFFFFF
 };
 const AddressRange MemoryMap::RAM_RANGE{ 0x00000000, 2 * 1024 * 1024 };
-const AddressRange MemoryMap::BIOS_RANGE{ 0x1FC00000, 512 * 1024 };
-const AddressRange MemoryMap::SYS_CONTROL_RANGE{ 0x1F801000, 36 };
-const AddressRange MemoryMap::SPU_RANGE{ 0x1F801C00, 640 };
-const AddressRange MemoryMap::RAM_SIZE_RANGE{ 0x1F801060, 4 };
-const AddressRange MemoryMap::CACHE_CONTROL_RANGE{ 0xFFFE0130, 4 };
 const AddressRange MemoryMap::EXPANSION1_RANGE{ 0x1F000000, 8 * 1024 * 1024 };
-const AddressRange MemoryMap::EXPANSION2_RANGE{ 0x1F802000, 66 };
+const AddressRange MemoryMap::MEMORY_CONTROL_RANGE{ 0x1F801000, 36 };
+const AddressRange MemoryMap::RAM_SIZE_RANGE{ 0x1F801060, 4 };
 const AddressRange MemoryMap::IRQ_CONTROL_RANGE{ 0x1F801070, 8 };
-const AddressRange MemoryMap::TIMERS_RANGE{ 0x1F801100, 48 };
 const AddressRange MemoryMap::DMA_RANGE{ 0x1F801080, 128 };
-const AddressRange MemoryMap::GPU_RANGE{ 0x1F801810, 16 };
+const AddressRange MemoryMap::TIMERS_RANGE{ 0x1F801100, 48 };
+const AddressRange MemoryMap::GPU_RANGE{ 0x1F801810, 8 };
+const AddressRange MemoryMap::SPU_RANGE{ 0x1F801C00, 640 };
+const AddressRange MemoryMap::EXPANSION2_RANGE{ 0x1F802000, 128 };
+const AddressRange MemoryMap::BIOS_RANGE{ 0x1FC00000, 512 * 1024 };
+const AddressRange MemoryMap::CACHE_CONTROL_RANGE{ 0xFFFE0130, 4 };

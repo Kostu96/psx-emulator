@@ -217,7 +217,7 @@ void InstructionSet::MULT(CPU& cpu, Instruction instruction)
     int64_t t = static_cast<int32_t>(cpu.getReg(instruction.regT()));
     uint64_t value = s * t;
     cpu.m_HI = value >> 32;
-    cpu.m_HI = value;
+    cpu.m_LO = value & 0xFFFFFFFF;
 }
 
 void InstructionSet::MULTU(CPU& cpu, Instruction instruction)
@@ -226,7 +226,7 @@ void InstructionSet::MULTU(CPU& cpu, Instruction instruction)
     uint64_t t = cpu.getReg(instruction.regT());
     uint64_t value = s * t;
     cpu.m_HI = value >> 32;
-    cpu.m_HI = value;
+    cpu.m_LO = value & 0xFFFFFFFF;
 }
 
 void InstructionSet::ADD(CPU& cpu, Instruction instruction)
