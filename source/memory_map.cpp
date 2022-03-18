@@ -300,7 +300,7 @@ void MemoryMap::DMATransferLinkedList(DMA::Port port)
             address += 4;
             address &= 0x1FFFFC;
             uint32_t command = m_ram.load32(address);
-            std::cout << "GPU commnad: " << std::hex << command << std::dec << '\n';
+            m_gpu.store32(0, command); // send to GP0
             transferSize -= 1;
         }
         address = header & 0x1FFFFC;
