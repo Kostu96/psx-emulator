@@ -40,6 +40,7 @@ void CPU::runNextInstruction()
 
     decodeAndExecute(inst);
 
+    // TODO: this is perf bottleneck
     m_inputRegs = m_outputRegs;
 }
 

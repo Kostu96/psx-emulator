@@ -16,6 +16,8 @@ public:
 	void store32(uint32_t address, uint32_t value);
 private:
 	static uint32_t maskRegion(uint32_t address);
+	void DMATransfer(DMA::Port port);
+	void DMATransferBlock(DMA::Port port);
 
 	static const uint32_t REGION_MASK[];
 	static const AddressRange RAM_RANGE;

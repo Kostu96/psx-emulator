@@ -151,7 +151,10 @@ void MemoryMap::store32(uint32_t address, uint32_t value)
     }
 
     if (DMA_RANGE.contains(absAddr, offset)) {
-        m_dma.store32(offset, value);
+        DMA::Port activePort = DMA::Port::Invalid;
+        m_dma.store32(offset, value, activePort);
+        if (activePort != DMA::Port::Invalid)
+            DMATransfer(activePort);
         return;
     }
 
@@ -207,6 +210,22 @@ uint32_t MemoryMap::maskRegion(uint32_t address)
 {
     uint32_t index = address >> 29;
     return address & REGION_MASK[index];
+}
+
+void MemoryMap::DMATransfer(DMA::Port port)
+{
+    switch (m_dma.getChannels()->control.fields.sync) {
+    case DMA::Channel::Sync::LinkedList:
+        std::cerr << "Linked list DMA tranfer unimplemented!\n";
+        abort();
+    default:
+        DMATransferBlock(port);
+    }
+}
+
+void MemoryMap::DMATransferBlock(DMA::Port port)
+{
+
 }
 
 const uint32_t MemoryMap::REGION_MASK[] = {
