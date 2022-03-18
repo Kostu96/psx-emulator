@@ -35,18 +35,18 @@ void GPU::store32(uint32_t offset, uint32_t value)
 void GPU::gp0write(uint32_t value)
 {
     if (m_remainigCommandWords == 0) {
-        std::function<void(uint32_t)> func;
+        std::function<void()> func;
         uint8_t remaining = 1;
         uint32_t opcode = (value >> 24) & 0xFF;
         switch (opcode) {
-        case 0x00: func = std::bind(&NOP, this, value); break;
-        case 0x28: func = std::bind(&RenderOpaqueMonoChromeQuad, this, value); remaining = 5; break;
-        case 0xE1: func = std::bind(&DrawMode, this, value); break;
-        case 0xE2: func = std::bind(&TextureWindow, this, value); break;
-        case 0xE3: func = std::bind(&SetDrawingAreaTL, this, value); break;
-        case 0xE4: func = std::bind(&SetDrawingAreaBR, this, value); break;
-        case 0xE5: func = std::bind(&SetDrawingOffset, this, value); break;
-        case 0xE6: func = std::bind(&MaskBitSetting, this, value); break;
+        case 0x00: func = std::bind(&GPU::NOP, this, value); break;
+        case 0x28: func = std::bind(&GPU::RenderOpaqueMonoChromeQuad, this, value); remaining = 5; break;
+        case 0xE1: func = std::bind(&GPU::DrawMode, this, value); break;
+        case 0xE2: func = std::bind(&GPU::TextureWindow, this, value); break;
+        case 0xE3: func = std::bind(&GPU::SetDrawingAreaTL, this, value); break;
+        case 0xE4: func = std::bind(&GPU::SetDrawingAreaBR, this, value); break;
+        case 0xE5: func = std::bind(&GPU::SetDrawingOffset, this, value); break;
+        case 0xE6: func = std::bind(&GPU::MaskBitSetting, this, value); break;
         default:
             std::cerr << "Unhandled gp0 command: " << std::hex << opcode << std::dec << '\n';
             abort();
