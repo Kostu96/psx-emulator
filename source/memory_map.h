@@ -18,6 +18,7 @@ private:
 	static uint32_t maskRegion(uint32_t address);
 	void DMATransfer(DMA::Port port);
 	void DMATransferBlock(DMA::Port port);
+	void DMATransferLinkedList(DMA::Port port);
 
 	static const uint32_t REGION_MASK[];
 	static const AddressRange RAM_RANGE;

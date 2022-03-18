@@ -20,6 +20,11 @@ public:
 		enum Step { Increment = 0, Decrement = 1 };
 		enum Sync { Manual = 0, Request = 1, LinkedList = 2 };
 
+		void done() {
+			control.fields.enable = 0;
+			control.fields.trigger = 0;
+		}
+
 		union {
 			struct {
 				uint32_t address    : 24; // 0-23
@@ -29,8 +34,8 @@ public:
 		} baseAddress;
 		union {
 			struct {
-				uint16_t lower; // 0-15
-				uint16_t upper; // 16-31
+				uint16_t blockSize;  // 0-15
+				uint16_t blockCount; // 16-31
 			} fields;
 			uint32_t word = 0;
 		} blockControl;
@@ -58,7 +63,7 @@ public:
 
 	DMA() = default;
 
-	const Channel* getChannels() const { return m_channels; }
+	Channel& getChannel(DMA::Port port) { return m_channels[static_cast<uint32_t>(port)]; }
 
 	uint32_t load32(uint32_t offset) const;
 	void store32(uint32_t offset, uint32_t value, DMA::Port& activePort);

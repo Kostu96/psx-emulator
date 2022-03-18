@@ -70,7 +70,7 @@ uint32_t MemoryMap::load32(uint32_t address) const
         std::cerr << "Temp handled load from GPU\n";
 
         if (offset == 4)
-            return 0x10000000;
+            return 0x1c000000;
 
         return 0; // TODO: temp
     }
@@ -214,10 +214,10 @@ uint32_t MemoryMap::maskRegion(uint32_t address)
 
 void MemoryMap::DMATransfer(DMA::Port port)
 {
-    switch (m_dma.getChannels()->control.fields.sync) {
+    switch (m_dma.getChannel(port).control.fields.sync) {
     case DMA::Channel::Sync::LinkedList:
-        std::cerr << "Linked list DMA tranfer unimplemented!\n";
-        abort();
+        DMATransferLinkedList(port);
+        break;
     default:
         DMATransferBlock(port);
     }
@@ -225,7 +225,84 @@ void MemoryMap::DMATransfer(DMA::Port port)
 
 void MemoryMap::DMATransferBlock(DMA::Port port)
 {
+    DMA::Channel& channel = m_dma.getChannel(port);
+    uint32_t address = channel.baseAddress.fields.address;
+    uint32_t transferSize = 0xDEADBEEF;
+    switch (channel.control.fields.sync) {
+    case DMA::Channel::Sync::Manual:
+        transferSize = channel.blockControl.fields.blockSize;
+        break;
+    case DMA::Channel::Sync::Request:
+        transferSize = channel.blockControl.fields.blockSize * channel.blockControl.fields.blockCount;
+        break;
+    }
 
+    while (transferSize > 0) {
+        uint32_t currentAddress = address & 0x1FFFFC;
+        uint32_t word = 0xDEADBEEF;
+        switch (channel.control.fields.direction) {
+        case DMA::Channel::Direction::FromRAM: {
+            word = m_ram.load32(currentAddress);
+            switch (port) {
+            case DMA::Port::GPU:
+                std::cout << "GPU data: " << std::hex << word << std::dec << '\n';
+                break;
+            default:
+                std::cerr << "Unimplemented DMA transfer target!\n";
+                abort();
+            }
+        } break;
+        case DMA::Channel::Direction::ToRAM: {
+            switch (port) {
+            case DMA::Port::OTC:
+                if (transferSize == 1)
+                    word = 0xFFFFFF;
+                else
+                    word = (address - 4) & 0x1FFFFF;
+                break;
+            default:
+                std::cerr << "Unimplemented DMA transfer source!\n";
+                abort();
+            }
+            m_ram.store32(currentAddress, word);
+        } break;
+        }
+
+        address += channel.control.fields.step == DMA::Channel::Step::Increment ? 4 : -4;
+        transferSize -= 1;
+    }
+    channel.done();
+}
+
+void MemoryMap::DMATransferLinkedList(DMA::Port port)
+{
+    DMA::Channel& channel = m_dma.getChannel(port);
+    uint32_t address = channel.baseAddress.fields.address & 0x1FFFFC;
+
+    if (channel.control.fields.direction == DMA::Channel::Direction::ToRAM) {
+        std::cerr << "Invalid drirection form linked list DMA transfer!\n";
+        abort();
+    }
+
+    if (port != DMA::Port::GPU) {
+        std::cerr << "Linked list DMA transfer on port different than GPU!\n";
+        abort();
+    }
+
+    uint32_t header = 0xDEADBEEF;
+    do {
+        header = m_ram.load32(address);
+        uint32_t transferSize = header >> 24;
+        while (transferSize > 0) {
+            address += 4;
+            address &= 0x1FFFFC;
+            uint32_t command = m_ram.load32(address);
+            std::cout << "GPU commnad: " << std::hex << command << std::dec << '\n';
+            transferSize -= 1;
+        }
+        address = header & 0x1FFFFC;
+    } while ((header & 0x800000) == 0);
+    channel.done();
 }
 
 const uint32_t MemoryMap::REGION_MASK[] = {
