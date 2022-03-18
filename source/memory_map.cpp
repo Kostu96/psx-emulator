@@ -215,11 +215,13 @@ uint32_t MemoryMap::maskRegion(uint32_t address)
 void MemoryMap::DMATransfer(DMA::Port port)
 {
     switch (m_dma.getChannel(port).control.fields.sync) {
+    case DMA::Channel::Sync::Manual:
+    case DMA::Channel::Sync::Request:
+        DMATransferBlock(port);
+        break;
     case DMA::Channel::Sync::LinkedList:
         DMATransferLinkedList(port);
         break;
-    default:
-        DMATransferBlock(port);
     }
 }
 
@@ -227,17 +229,10 @@ void MemoryMap::DMATransferBlock(DMA::Port port)
 {
     DMA::Channel& channel = m_dma.getChannel(port);
     uint32_t address = channel.baseAddress.fields.address;
-    uint32_t transferSize = 0xDEADBEEF;
-    switch (channel.control.fields.sync) {
-    case DMA::Channel::Sync::Manual:
-        transferSize = channel.blockControl.fields.blockSize;
-        break;
-    case DMA::Channel::Sync::Request:
-        transferSize = channel.blockControl.fields.blockSize * channel.blockControl.fields.blockCount;
-        break;
-    }
+    uint32_t transferSize = channel.getTransferSize();
 
-    while (transferSize > 0) {
+    while (transferSize > 0)
+    {
         uint32_t currentAddress = address & 0x1FFFFC;
         uint32_t word = 0xDEADBEEF;
         switch (channel.control.fields.direction) {
@@ -259,6 +254,9 @@ void MemoryMap::DMATransferBlock(DMA::Port port)
                     word = 0xFFFFFF;
                 else
                     word = (address - 4) & 0x1FFFFF;
+                break;
+            case DMA::Port::GPU:
+                std::cerr << "Unexpected DMA from GPU to RAM - address: " << std::hex << address << std::dec << '\n';
                 break;
             default:
                 std::cerr << "Unimplemented DMA transfer source!\n";

@@ -20,10 +20,8 @@ public:
 		enum Step { Increment = 0, Decrement = 1 };
 		enum Sync { Manual = 0, Request = 1, LinkedList = 2 };
 
-		void done() {
-			control.fields.enable = 0;
-			control.fields.trigger = 0;
-		}
+		uint32_t getTransferSize() const;
+		void done();
 
 		union {
 			struct {

@@ -2,6 +2,23 @@
 
 #include <iostream>
 
+uint32_t DMA::Channel::getTransferSize() const
+{
+	uint32_t size = 0xDEADBEEF;
+	if (control.fields.sync != Sync::LinkedList)
+		size = blockControl.fields.blockSize;
+	if (control.fields.sync == Sync::Request)
+		size *= blockControl.fields.blockCount;
+
+	return size;
+}
+
+void DMA::Channel::done()
+{
+	control.fields.enable = 0;
+	control.fields.trigger = 0;
+}
+
 uint32_t DMA::load32(uint32_t offset) const
 {
 	switch (offset) {
