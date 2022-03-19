@@ -16,6 +16,10 @@ set(SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/registers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/registers.h
     ${CMAKE_CURRENT_SOURCE_DIR}/type_helpers.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/opengl/buffers.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/opengl/buffers.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/opengl/renderer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/opengl/renderer.h
 )
 
 add_library(${TARGET_NAME_LIB} STATIC
@@ -24,6 +28,11 @@ add_library(${TARGET_NAME_LIB} STATIC
 )
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX source FILES ${SOURCE_FILES})
+
+target_link_libraries(${TARGET_NAME_LIB}
+	glad
+	glfw
+)
 
 set_target_properties(${TARGET_NAME_LIB} PROPERTIES
     MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
