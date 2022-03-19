@@ -12,6 +12,11 @@ public:
 	uint32_t load32(uint32_t offset) const;
 	void store32(uint32_t offset, uint32_t value);
 private:
+	enum class GP0Mode {
+		Command,
+		ImageLoad
+	};
+
 	class CommandBuffer
 	{
 	public:
@@ -25,7 +30,13 @@ private:
 
 	void gp0write(uint32_t value);
 	void NOP(uint32_t instruction);
-	void RenderOpaqueMonoChromeQuad(uint32_t instruction);
+	void ClearCache(uint32_t instruction);
+	void RenderOpaqueMonochromeQuad(uint32_t instruction);
+	void RenderOpaqueTexturedQuadWithBlending(uint32_t instruction);
+	void RenderOpaqueShadedTriangle(uint32_t instruction);
+	void RenderOpaqueShadedQuad(uint32_t instruction);
+	void CopyRectangleToVRAM(uint32_t instruction);
+	void CopyRectangleFromVRAM(uint32_t instruction);
 	void DrawMode(uint32_t instruction);
 	void TextureWindow(uint32_t instruction);
 	void SetDrawingAreaTL(uint32_t instruction);
@@ -43,9 +54,10 @@ private:
 	void VerticalDisplayRange(uint32_t instruction);
 	void DisplayMode(uint32_t instruction);
 
-	CommandBuffer m_commandBuffer;
-	uint8_t m_remainigCommandWords = 0;
-	std::function<void()> m_commandFunc;
+	GP0Mode m_gp0Mode = GP0Mode::Command;
+	CommandBuffer m_gp0CommandBuffer;
+	uint32_t m_gp0RemainigWords = 0;
+	std::function<void()> m_gp0CommandFunc = nullptr;
 	union {
 		struct {
 			uint32_t pageBaseX             : 4; // 0-3

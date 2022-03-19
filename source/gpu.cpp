@@ -8,9 +8,16 @@ uint32_t GPU::load32(uint32_t offset) const
     case 0:
         std::cerr << "Temp handled read from GPUREAD\n";
         return 0;
-    //case 4:
-    //    abort();
-    //    return 0;
+    case 4:
+        // TODO: temp
+        // apply WAs to GPUSTAT register
+        uint32_t status = m_status.word;
+        status &= ~(1 << 19); // zero out bit 19 - vertical resolution
+        status |= 1 << 26; // set bit 26 - ready to receive command
+        status |= 1 << 27; // set bit 27 - ready to send VRAM to CPU
+        status |= 1 << 28; // set bit 28 - ready to receive DMA block
+        status |= 0 << 31; // bit 31 should changed based on interlacing
+        return status;
     }
 
     std::cerr << "Store to ivalid GPU location: " << std::hex << offset << std::dec << '\n';
@@ -34,13 +41,19 @@ void GPU::store32(uint32_t offset, uint32_t value)
 
 void GPU::gp0write(uint32_t value)
 {
-    if (m_remainigCommandWords == 0) {
+    if (m_gp0RemainigWords == 0) {
         std::function<void()> func;
         uint8_t remaining = 1;
         uint32_t opcode = (value >> 24) & 0xFF;
         switch (opcode) {
         case 0x00: func = std::bind(&GPU::NOP, this, value); break;
-        case 0x28: func = std::bind(&GPU::RenderOpaqueMonoChromeQuad, this, value); remaining = 5; break;
+        case 0x01: func = std::bind(&GPU::ClearCache, this, value); break;
+        case 0x28: func = std::bind(&GPU::RenderOpaqueMonochromeQuad, this, value); remaining = 5; break;
+        case 0x2C: func = std::bind(&GPU::RenderOpaqueTexturedQuadWithBlending, this, value); remaining = 9; break;
+        case 0x30: func = std::bind(&GPU::RenderOpaqueShadedTriangle, this, value); remaining = 6; break;
+        case 0x38: func = std::bind(&GPU::RenderOpaqueShadedQuad, this, value); remaining = 8; break;
+        case 0xA0: func = std::bind(&GPU::CopyRectangleToVRAM, this, value); remaining = 3; break;
+        case 0xC0: func = std::bind(&GPU::CopyRectangleFromVRAM, this, value); remaining = 3; break;
         case 0xE1: func = std::bind(&GPU::DrawMode, this, value); break;
         case 0xE2: func = std::bind(&GPU::TextureWindow, this, value); break;
         case 0xE3: func = std::bind(&GPU::SetDrawingAreaTL, this, value); break;
@@ -49,19 +62,27 @@ void GPU::gp0write(uint32_t value)
         case 0xE6: func = std::bind(&GPU::MaskBitSetting, this, value); break;
         default:
             std::cerr << "Unhandled gp0 command: " << std::hex << opcode << std::dec << '\n';
-            abort();
+            //abort();
         }
 
-        m_remainigCommandWords = remaining;
-        m_commandFunc = func;
-        m_commandBuffer.clear();
+        m_gp0RemainigWords = remaining;
+        m_gp0CommandFunc = func;
+        m_gp0CommandBuffer.clear();
     }
+    
+    m_gp0RemainigWords -= 1;
 
-    m_commandBuffer.push(value);
-    m_remainigCommandWords -= 1;
-
-    if (m_remainigCommandWords == 0)
-        m_commandFunc();
+    switch (m_gp0Mode) {
+    case GP0Mode::Command:
+        m_gp0CommandBuffer.push(value);
+        if (m_gp0RemainigWords == 0)
+            m_gp0CommandFunc();
+        break;
+    case GP0Mode::ImageLoad:
+        if (m_gp0RemainigWords == 0)
+            m_gp0Mode = GP0Mode::Command;
+        break;
+    }
 }
 
 void GPU::NOP(uint32_t /*instruction*/)
@@ -69,10 +90,55 @@ void GPU::NOP(uint32_t /*instruction*/)
     // GP0(00h)
 }
 
-void GPU::RenderOpaqueMonoChromeQuad(uint32_t instruction)
+void GPU::ClearCache(uint32_t instruction)
+{
+    // GP0(01h)
+    std::cerr << "Unimplemented GP0(01h) command!\n";
+}
+
+void GPU::RenderOpaqueMonochromeQuad(uint32_t instruction)
 {
     // GP0(28h)
+    std::cerr << "Unimplemented GP0(28h) command!\n";
+}
 
+void GPU::RenderOpaqueTexturedQuadWithBlending(uint32_t instruction)
+{
+    // GP0(2Ch)
+    std::cerr << "Unimplemented GP0(2Ch) command!\n";
+}
+
+void GPU::RenderOpaqueShadedTriangle(uint32_t instruction)
+{
+    // GP0(30h)
+    std::cerr << "Unimplemented GP0(30h) command!\n";
+}
+
+void GPU::RenderOpaqueShadedQuad(uint32_t instruction)
+{
+    // GP0(38h)
+    std::cerr << "Unimplemented GP0(38h) command!\n";
+}
+
+void GPU::CopyRectangleToVRAM(uint32_t instruction)
+{
+    // GP0(A0h)
+    uint32_t res = m_gp0CommandBuffer[2];
+    uint32_t width = res & 0xFFFF;
+    uint32_t height = res >> 16;
+    uint32_t imgSize = width * height;
+    imgSize = (imgSize + 1) & ~1;
+    m_gp0RemainigWords = imgSize / 2;
+    m_gp0Mode = GP0Mode::ImageLoad;
+}
+
+void GPU::CopyRectangleFromVRAM(uint32_t instruction)
+{
+    // GP0(C0h)
+    std::cerr << "Unimplemented GP0(C0h) command!\n";
+    uint32_t res = m_gp0CommandBuffer[2];
+    uint32_t width = res & 0xFFFF;
+    uint32_t height = res >> 16;
 }
 
 void GPU::DrawMode(uint32_t instruction)
@@ -134,6 +200,9 @@ void GPU::gp1write(uint32_t value)
     uint32_t opcode = (value >> 24) & 0xFF;
     switch (opcode) {
     case 0x00: Reset(value); break;
+    case 0x01: ResetCommandBuffer(value); break;
+    case 0x02: ResetGPUIRQ(value); break;
+    case 0x03: DisplayDisable(value); break;
     case 0x04: DMADirection(value); break;
     case 0x05: DisplayAreaStart(value); break;
     case 0x06: HorizontalDisplayRange(value); break;
@@ -167,7 +236,11 @@ void GPU::Reset(uint32_t /*instruction*/)
 void GPU::ResetCommandBuffer(uint32_t /*instruction*/)
 {
     // GP1(01h)
-    // TODO:
+    m_gp0CommandBuffer.clear();
+    m_gp0CommandFunc = nullptr;
+    m_gp0Mode = GP0Mode::Command;
+    m_gp0RemainigWords = 0;
+    // TODO: Unfinished!
 }
 
 void GPU::ResetGPUIRQ(uint32_t /*instruction*/)

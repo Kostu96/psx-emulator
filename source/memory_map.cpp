@@ -66,23 +66,17 @@ uint32_t MemoryMap::load32(uint32_t address) const
     if (DMA_RANGE.contains(absAddr, offset))
         return m_dma.load32(offset);
 
-    if (GPU_RANGE.contains(absAddr, offset)) {
-        std::cerr << "Temp handled load from GPU\n";
-
-        if (offset == 4)
-            return 0x1c000000;
-
-        return 0; // TODO: temp
-    }
+    if (GPU_RANGE.contains(absAddr, offset))
+        return m_gpu.load32(offset);
 
     if (IRQ_CONTROL_RANGE.contains(absAddr, offset)) {
         std::cerr << "Temp handled load from IRQ_CONTROL\n";
-        return 0; // TODO: temp
+        return 0;
     }
 
     if (TIMERS_RANGE.contains(absAddr, offset)) {
         std::cerr << "Temp handled load from TIMERS\n";
-        return 0; // TODO: temp
+        return 0;
     }
 
     std::cerr << "Unhandled access when loading from: " << std::hex << address << std::dec << '\n';
@@ -245,7 +239,7 @@ void MemoryMap::DMATransferBlock(DMA::Port port)
             word = m_ram.load32(currentAddress);
             switch (port) {
             case DMA::Port::GPU:
-                std::cout << "GPU data: " << std::hex << word << std::dec << '\n';
+                m_gpu.store32(0, word); // send to GP0
                 break;
             default:
                 std::cerr << "Unimplemented DMA transfer target!\n";
