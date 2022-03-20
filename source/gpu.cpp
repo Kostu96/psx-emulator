@@ -1,4 +1,5 @@
 #include "gpu.h"
+#include "opengl/renderer.h"
 
 #include <iostream>
 
@@ -99,25 +100,131 @@ void GPU::ClearCache(uint32_t instruction)
 void GPU::RenderOpaqueMonochromeQuad(uint32_t instruction)
 {
     // GP0(28h)
-    std::cerr << "Unimplemented GP0(28h) command!\n";
+    Renderer::Vertex vertices[6];
+
+    vertices[0].x = m_gp0CommandBuffer[1] & 0xFFFF;
+    vertices[0].y = (m_gp0CommandBuffer[1] >> 16) & 0xFFFF;
+    vertices[1].x = m_gp0CommandBuffer[2] & 0xFFFF;
+    vertices[1].y = (m_gp0CommandBuffer[2] >> 16) & 0xFFFF;
+    vertices[2].x = m_gp0CommandBuffer[3] & 0xFFFF;
+    vertices[2].y = (m_gp0CommandBuffer[3] >> 16) & 0xFFFF;
+
+    vertices[3].x = m_gp0CommandBuffer[2] & 0xFFFF;
+    vertices[3].y = (m_gp0CommandBuffer[2] >> 16) & 0xFFFF;
+    vertices[4].x = m_gp0CommandBuffer[3] & 0xFFFF;
+    vertices[4].y = (m_gp0CommandBuffer[3] >> 16) & 0xFFFF;
+    vertices[5].x = m_gp0CommandBuffer[4] & 0xFFFF;
+    vertices[5].y = (m_gp0CommandBuffer[4] >> 16) & 0xFFFF;
+
+    vertices[5].r = vertices[4].r = vertices[3].r = vertices[2].r = vertices[1].r = vertices[0].r = m_gp0CommandBuffer[0] & 0xFF;
+    vertices[5].g = vertices[4].g = vertices[3].g = vertices[2].g = vertices[1].g = vertices[0].g = (m_gp0CommandBuffer[0] >> 8) & 0xFF;
+    vertices[5].b = vertices[4].b = vertices[3].b = vertices[2].b = vertices[1].b = vertices[0].b = (m_gp0CommandBuffer[0] >> 16) & 0xFF;
+    vertices[5].a = vertices[4].a = vertices[3].a = vertices[2].a = vertices[1].a = vertices[0].a = 0xFF;
+
+    m_renderer.pushQuad(vertices, sizeof(vertices));
 }
 
 void GPU::RenderOpaqueTexturedQuadWithBlending(uint32_t instruction)
 {
     // GP0(2Ch)
-    std::cerr << "Unimplemented GP0(2Ch) command!\n";
+    Renderer::Vertex vertices[6];
+
+    vertices[0].x = m_gp0CommandBuffer[1] & 0xFFFF;
+    vertices[0].y = (m_gp0CommandBuffer[1] >> 16) & 0xFFFF;
+    vertices[1].x = m_gp0CommandBuffer[3] & 0xFFFF;
+    vertices[1].y = (m_gp0CommandBuffer[3] >> 16) & 0xFFFF;
+    vertices[2].x = m_gp0CommandBuffer[5] & 0xFFFF;
+    vertices[2].y = (m_gp0CommandBuffer[5] >> 16) & 0xFFFF;
+
+    vertices[3].x = m_gp0CommandBuffer[3] & 0xFFFF;
+    vertices[3].y = (m_gp0CommandBuffer[3] >> 16) & 0xFFFF;
+    vertices[4].x = m_gp0CommandBuffer[5] & 0xFFFF;
+    vertices[4].y = (m_gp0CommandBuffer[5] >> 16) & 0xFFFF;
+    vertices[5].x = m_gp0CommandBuffer[7] & 0xFFFF;
+    vertices[5].y = (m_gp0CommandBuffer[7] >> 16) & 0xFFFF;
+
+    vertices[5].r = vertices[4].r = vertices[3].r = vertices[2].r = vertices[1].r = vertices[0].r = m_gp0CommandBuffer[0] & 0xFF;
+    vertices[5].g = vertices[4].g = vertices[3].g = vertices[2].g = vertices[1].g = vertices[0].g = (m_gp0CommandBuffer[0] >> 8) & 0xFF;
+    vertices[5].b = vertices[4].b = vertices[3].b = vertices[2].b = vertices[1].b = vertices[0].b = (m_gp0CommandBuffer[0] >> 16) & 0xFF;
+    vertices[5].a = vertices[4].a = vertices[3].a = vertices[2].a = vertices[1].a = vertices[0].a = 0xFF;
+
+    m_renderer.pushQuad(vertices, sizeof(vertices));
 }
 
 void GPU::RenderOpaqueShadedTriangle(uint32_t instruction)
 {
     // GP0(30h)
-    std::cerr << "Unimplemented GP0(30h) command!\n";
+    Renderer::Vertex vertices[3];
+
+    vertices[0].x = m_gp0CommandBuffer[1] & 0xFFFF;
+    vertices[0].y = (m_gp0CommandBuffer[1] >> 16) & 0xFFFF;
+    vertices[1].x = m_gp0CommandBuffer[3] & 0xFFFF;
+    vertices[1].y = (m_gp0CommandBuffer[3] >> 16) & 0xFFFF;
+    vertices[2].x = m_gp0CommandBuffer[5] & 0xFFFF;
+    vertices[2].y = (m_gp0CommandBuffer[5] >> 16) & 0xFFFF;
+
+    vertices[0].r = m_gp0CommandBuffer[0] & 0xFF;
+    vertices[0].g = (m_gp0CommandBuffer[0] >> 8) & 0xFF;
+    vertices[0].b = (m_gp0CommandBuffer[0] >> 16) & 0xFF;
+    vertices[0].a = 0xFF;
+    vertices[1].r = m_gp0CommandBuffer[2] & 0xFF;
+    vertices[1].g = (m_gp0CommandBuffer[2] >> 8) & 0xFF;
+    vertices[1].b = (m_gp0CommandBuffer[2] >> 16) & 0xFF;
+    vertices[1].a = 0xFF;
+    vertices[2].r = m_gp0CommandBuffer[4] & 0xFF;
+    vertices[2].g = (m_gp0CommandBuffer[4] >> 8) & 0xFF;
+    vertices[2].b = (m_gp0CommandBuffer[4] >> 16) & 0xFF;
+    vertices[2].a = 0xFF;
+
+    m_renderer.pushTriangle(vertices, sizeof(vertices));
 }
 
 void GPU::RenderOpaqueShadedQuad(uint32_t instruction)
 {
     // GP0(38h)
-    std::cerr << "Unimplemented GP0(38h) command!\n";
+    Renderer::Vertex vertices[6];
+
+    vertices[0].x = m_gp0CommandBuffer[1] & 0xFFFF;
+    vertices[0].y = (m_gp0CommandBuffer[1] >> 16) & 0xFFFF;
+    vertices[1].x = m_gp0CommandBuffer[3] & 0xFFFF;
+    vertices[1].y = (m_gp0CommandBuffer[3] >> 16) & 0xFFFF;
+    vertices[2].x = m_gp0CommandBuffer[5] & 0xFFFF;
+    vertices[2].y = (m_gp0CommandBuffer[5] >> 16) & 0xFFFF;
+
+    vertices[0].r = m_gp0CommandBuffer[0] & 0xFF;
+    vertices[0].g = (m_gp0CommandBuffer[0] >> 8) & 0xFF;
+    vertices[0].b = (m_gp0CommandBuffer[0] >> 16) & 0xFF;
+    vertices[0].a = 0xFF;
+    vertices[1].r = m_gp0CommandBuffer[2] & 0xFF;
+    vertices[1].g = (m_gp0CommandBuffer[2] >> 8) & 0xFF;
+    vertices[1].b = (m_gp0CommandBuffer[2] >> 16) & 0xFF;
+    vertices[1].a = 0xFF;
+    vertices[2].r = m_gp0CommandBuffer[4] & 0xFF;
+    vertices[2].g = (m_gp0CommandBuffer[4] >> 8) & 0xFF;
+    vertices[2].b = (m_gp0CommandBuffer[4] >> 16) & 0xFF;
+    vertices[2].a = 0xFF;
+
+    vertices[3].x = m_gp0CommandBuffer[3] & 0xFFFF;
+    vertices[3].y = (m_gp0CommandBuffer[3] >> 16) & 0xFFFF;
+    vertices[4].x = m_gp0CommandBuffer[5] & 0xFFFF;
+    vertices[4].y = (m_gp0CommandBuffer[5] >> 16) & 0xFFFF;
+    vertices[5].x = m_gp0CommandBuffer[7] & 0xFFFF;
+    vertices[5].y = (m_gp0CommandBuffer[7] >> 16) & 0xFFFF;
+
+    vertices[3].r = m_gp0CommandBuffer[2] & 0xFF;
+    vertices[3].g = (m_gp0CommandBuffer[2] >> 8) & 0xFF;
+    vertices[3].b = (m_gp0CommandBuffer[2] >> 16) & 0xFF;
+    vertices[3].a = 0xFF;
+    vertices[4].r = m_gp0CommandBuffer[4] & 0xFF;
+    vertices[4].g = (m_gp0CommandBuffer[4] >> 8) & 0xFF;
+    vertices[4].b = (m_gp0CommandBuffer[4] >> 16) & 0xFF;
+    vertices[4].a = 0xFF;
+    vertices[5].r = m_gp0CommandBuffer[6] & 0xFF;
+    vertices[5].g = (m_gp0CommandBuffer[6] >> 8) & 0xFF;
+    vertices[5].b = (m_gp0CommandBuffer[6] >> 16) & 0xFF;
+    vertices[5].a = 0xFF;
+
+    m_renderer.pushQuad(vertices, sizeof(vertices));
 }
 
 void GPU::CopyRectangleToVRAM(uint32_t instruction)
@@ -186,6 +293,9 @@ void GPU::SetDrawingOffset(uint32_t instruction)
     if (hw & 0x400)
         hw |= 0xF800;
     m_drawingOffsetY = hw;
+
+    // TODO: temporary hack
+    m_renderer.swap();
 }
 
 void GPU::MaskBitSetting(uint32_t instruction)

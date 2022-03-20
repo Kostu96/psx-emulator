@@ -4,10 +4,12 @@
 #include <cstdint>
 #include <functional>
 
+class Renderer;
+
 class GPU
 {
 public:
-	GPU() = default;
+	GPU(Renderer& renderer) : m_renderer(renderer) {};
 
 	uint32_t load32(uint32_t offset) const;
 	void store32(uint32_t offset, uint32_t value);
@@ -54,6 +56,7 @@ private:
 	void VerticalDisplayRange(uint32_t instruction);
 	void DisplayMode(uint32_t instruction);
 
+	Renderer& m_renderer;
 	GP0Mode m_gp0Mode = GP0Mode::Command;
 	CommandBuffer m_gp0CommandBuffer;
 	uint32_t m_gp0RemainigWords = 0;

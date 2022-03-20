@@ -7,7 +7,7 @@
 class MemoryMap
 {
 public:
-	MemoryMap() = default;
+	MemoryMap(Renderer& renderer) : m_gpu(renderer) {}
 
 	uint8_t load8(uint32_t address) const;
 	uint16_t load16(uint32_t address) const;

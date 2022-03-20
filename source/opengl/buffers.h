@@ -6,6 +6,7 @@ class VertexBuffer
 public:
     VertexBuffer(const void* vertices, size_t size);
     VertexBuffer(size_t size);
+    VertexBuffer(const VertexBuffer&) = delete;
     ~VertexBuffer();
 
     void bind() const;
@@ -19,6 +20,7 @@ class IndexBuffer
 {
 public:
     IndexBuffer(uint32_t* indices, uint32_t count);
+    IndexBuffer(const IndexBuffer&) = delete;
     ~IndexBuffer();
 
     void bind() const;

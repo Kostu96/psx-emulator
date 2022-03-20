@@ -20,6 +20,8 @@ set(SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/opengl/buffers.h
     ${CMAKE_CURRENT_SOURCE_DIR}/opengl/renderer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/opengl/renderer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/opengl/shader.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/opengl/shader.h
 )
 
 add_library(${TARGET_NAME_LIB} STATIC
