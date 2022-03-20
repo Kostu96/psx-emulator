@@ -1,7 +1,8 @@
 #version 450
 
 layout(location = 0) in ivec2 a_Position;
-layout(location = 1) in uvec4 a_Color;
+layout(location = 1) in vec2 a_TexCoord;
+layout(location = 2) in vec4 a_Color;
 
 out vec4 v_Color;
 
@@ -12,8 +13,5 @@ void main()
 
     gl_Position = vec4(xpos, ypos, 0.0, 1.0);
 	
-	v_Color = vec4(float(a_Color.r) / 255,
-	               float(a_Color.g) / 255,
-				   float(a_Color.b) / 255,
-				   float(a_Color.a) / 255);
+	v_Color = a_Color;
 }

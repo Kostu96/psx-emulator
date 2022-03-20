@@ -34,13 +34,13 @@ uint16_t MemoryMap::load16(uint32_t address) const
         return m_ram.load16(offset);
 
     if (SPU_RANGE.contains(absAddr, offset)) {
-        //std::cerr << "Temp handled read from SPU\n";
-        return 0; // Temp
+        std::cerr << "Temp handled read from SPU\n";
+        return 0;
     }
 
     if (IRQ_CONTROL_RANGE.contains(absAddr, offset)) {
         std::cerr << "Temp handled load from IRQ_CONTROL\n";
-        return 0; // TODO: temp
+        return 0;
     }
 
     std::cerr << "Unhandled access when loading from: " << std::hex << address << std::dec << '\n';
@@ -94,8 +94,9 @@ void MemoryMap::store8(uint32_t address, uint8_t value)
     }
 
     if (EXPANSION2_RANGE.contains(absAddr, offset)) {
-        std::cerr << "Unhandled write to EXPANSION2: " << std::hex << address << std::dec << '\n';
-        return; // Ignore EXPANSION2
+        std::cerr << "Unhandled store8 to: " << std::hex << address <<
+                     " EXPANSION2(" << offset << "): " << (uint16_t)value << std::dec << '\n';
+        return;
     }
 
     std::cerr << "Unhandled access when storing to: " << std::hex << address << std::dec << '\n';
@@ -163,8 +164,9 @@ void MemoryMap::store32(uint32_t address, uint32_t value)
     }
 
     if (IRQ_CONTROL_RANGE.contains(absAddr, offset)) {
-        std::cerr << "Unhandled write to IRQ_CONTROL: " << std::hex << address << std::dec << '\n';
-        return; // Ignore stores to IRQ_CONTROL
+        std::cerr << "Unhandled store32 to: " << std::hex << address <<
+            " IRQ_CONTROL(" << offset << "): " << value << std::dec << '\n';
+        return;
     }
 
     if (TIMERS_RANGE.contains(absAddr, offset)) {
@@ -173,8 +175,9 @@ void MemoryMap::store32(uint32_t address, uint32_t value)
     }
 
     if (CACHE_CONTROL_RANGE.contains(absAddr, offset)) {
-        std::cerr << "Unhandled write to CACHE_CONTROL: " << std::hex << address << std::dec << '\n';
-        return; // Ignore stores to CACHE_CONTROL
+        std::cerr << "Unhandled store32 to: " << std::hex << address <<
+                     " CACHE_CONTROL(" << offset << "): " << value << std::dec << '\n';
+        return;
     }
 
     if (MEMORY_CONTROL_RANGE.contains(absAddr, offset)) {
@@ -192,14 +195,16 @@ void MemoryMap::store32(uint32_t address, uint32_t value)
             }
             break;
         default:
-            std::cerr << "Unhandled write to MEMORY_CONTROL: " << std::hex << address << std::dec << '\n';
+            std::cerr << "Unhandled store32 to: " << std::hex << address <<
+                         " MEMORY_CONTROL(" << offset << "): " << value << std::dec << '\n';
         }
-        return; // Ignore stores to MEMORY_CONTROL
+        return;
     }
 
     if (RAM_SIZE_RANGE.contains(absAddr, offset)) {
-        std::cerr << "Unhandled write to RAM_SIZE: " << std::hex << address << std::dec << '\n';
-        return; // Ignore stores to RAM_SIZE
+        std::cerr << "Unhandled store32 to: " << std::hex << address <<
+                     " RAM_SIZE(" << offset << "): " << value << std::dec << '\n';
+        return;
     }
     
     std::cerr << "Unhandled access when storing to: " << std::hex << address << std::dec << '\n';

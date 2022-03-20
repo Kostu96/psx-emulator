@@ -1,10 +1,9 @@
 #pragma once
 #include "type_helpers.h"
+#include "opengl/renderer.h"
 
 #include <cstdint>
 #include <functional>
-
-class Renderer;
 
 class GPU
 {
@@ -61,6 +60,8 @@ private:
 	CommandBuffer m_gp0CommandBuffer;
 	uint32_t m_gp0RemainigWords = 0;
 	std::function<void()> m_gp0CommandFunc = nullptr;
+	Renderer::ImageData m_gp0ImageData;
+
 	union {
 		struct {
 			uint32_t pageBaseX             : 4; // 0-3

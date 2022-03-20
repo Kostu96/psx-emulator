@@ -80,8 +80,11 @@ void GPU::gp0write(uint32_t value)
             m_gp0CommandFunc();
         break;
     case GP0Mode::ImageLoad:
-        if (m_gp0RemainigWords == 0)
+        m_gp0ImageData.image.push_back(value);
+        if (m_gp0RemainigWords == 0) {
+            m_renderer.pushImage(m_gp0ImageData);
             m_gp0Mode = GP0Mode::Command;
+        }
         break;
     }
 }
@@ -100,26 +103,19 @@ void GPU::ClearCache(uint32_t instruction)
 void GPU::RenderOpaqueMonochromeQuad(uint32_t instruction)
 {
     // GP0(28h)
-    Renderer::Vertex vertices[6];
+    Renderer::GouraudVertex vertices[6];
 
-    vertices[0].x = m_gp0CommandBuffer[1] & 0xFFFF;
-    vertices[0].y = (m_gp0CommandBuffer[1] >> 16) & 0xFFFF;
-    vertices[1].x = m_gp0CommandBuffer[2] & 0xFFFF;
-    vertices[1].y = (m_gp0CommandBuffer[2] >> 16) & 0xFFFF;
-    vertices[2].x = m_gp0CommandBuffer[3] & 0xFFFF;
-    vertices[2].y = (m_gp0CommandBuffer[3] >> 16) & 0xFFFF;
+    for (uint32_t i = 0; i < 3; ++i) {
+        vertices[i].x = (m_gp0CommandBuffer[i + 1] & 0xFFFF) + m_drawingOffsetX;
+        vertices[i].y = ((m_gp0CommandBuffer[i + 1] >> 16) & 0xFFFF) + m_drawingOffsetY;
+        vertices[i].color.word = m_gp0CommandBuffer[0] | 0xFF000000;
+    }
 
-    vertices[3].x = m_gp0CommandBuffer[2] & 0xFFFF;
-    vertices[3].y = (m_gp0CommandBuffer[2] >> 16) & 0xFFFF;
-    vertices[4].x = m_gp0CommandBuffer[3] & 0xFFFF;
-    vertices[4].y = (m_gp0CommandBuffer[3] >> 16) & 0xFFFF;
-    vertices[5].x = m_gp0CommandBuffer[4] & 0xFFFF;
-    vertices[5].y = (m_gp0CommandBuffer[4] >> 16) & 0xFFFF;
-
-    vertices[5].r = vertices[4].r = vertices[3].r = vertices[2].r = vertices[1].r = vertices[0].r = m_gp0CommandBuffer[0] & 0xFF;
-    vertices[5].g = vertices[4].g = vertices[3].g = vertices[2].g = vertices[1].g = vertices[0].g = (m_gp0CommandBuffer[0] >> 8) & 0xFF;
-    vertices[5].b = vertices[4].b = vertices[3].b = vertices[2].b = vertices[1].b = vertices[0].b = (m_gp0CommandBuffer[0] >> 16) & 0xFF;
-    vertices[5].a = vertices[4].a = vertices[3].a = vertices[2].a = vertices[1].a = vertices[0].a = 0xFF;
+    for (uint32_t i = 3; i < 6; ++i) {
+        vertices[i].x = (m_gp0CommandBuffer[i - 1] & 0xFFFF) + m_drawingOffsetX;
+        vertices[i].y = ((m_gp0CommandBuffer[i - 1] >> 16) & 0xFFFF) + m_drawingOffsetY;
+        vertices[i].color.word = m_gp0CommandBuffer[0] | 0xFF000000;
+    }
 
     m_renderer.pushQuad(vertices, sizeof(vertices));
 }
@@ -127,26 +123,19 @@ void GPU::RenderOpaqueMonochromeQuad(uint32_t instruction)
 void GPU::RenderOpaqueTexturedQuadWithBlending(uint32_t instruction)
 {
     // GP0(2Ch)
-    Renderer::Vertex vertices[6];
+    Renderer::GouraudVertex vertices[6];
 
-    vertices[0].x = m_gp0CommandBuffer[1] & 0xFFFF;
-    vertices[0].y = (m_gp0CommandBuffer[1] >> 16) & 0xFFFF;
-    vertices[1].x = m_gp0CommandBuffer[3] & 0xFFFF;
-    vertices[1].y = (m_gp0CommandBuffer[3] >> 16) & 0xFFFF;
-    vertices[2].x = m_gp0CommandBuffer[5] & 0xFFFF;
-    vertices[2].y = (m_gp0CommandBuffer[5] >> 16) & 0xFFFF;
+    for (uint32_t i = 0; i < 3; ++i) {
+        vertices[i].x = (m_gp0CommandBuffer[2 * i + 1] & 0xFFFF) + m_drawingOffsetX;
+        vertices[i].y = ((m_gp0CommandBuffer[2 * i + 1] >> 16) & 0xFFFF) + m_drawingOffsetY;
+        vertices[i].color.word = m_gp0CommandBuffer[0] | 0xFF000000;
+    }
 
-    vertices[3].x = m_gp0CommandBuffer[3] & 0xFFFF;
-    vertices[3].y = (m_gp0CommandBuffer[3] >> 16) & 0xFFFF;
-    vertices[4].x = m_gp0CommandBuffer[5] & 0xFFFF;
-    vertices[4].y = (m_gp0CommandBuffer[5] >> 16) & 0xFFFF;
-    vertices[5].x = m_gp0CommandBuffer[7] & 0xFFFF;
-    vertices[5].y = (m_gp0CommandBuffer[7] >> 16) & 0xFFFF;
-
-    vertices[5].r = vertices[4].r = vertices[3].r = vertices[2].r = vertices[1].r = vertices[0].r = m_gp0CommandBuffer[0] & 0xFF;
-    vertices[5].g = vertices[4].g = vertices[3].g = vertices[2].g = vertices[1].g = vertices[0].g = (m_gp0CommandBuffer[0] >> 8) & 0xFF;
-    vertices[5].b = vertices[4].b = vertices[3].b = vertices[2].b = vertices[1].b = vertices[0].b = (m_gp0CommandBuffer[0] >> 16) & 0xFF;
-    vertices[5].a = vertices[4].a = vertices[3].a = vertices[2].a = vertices[1].a = vertices[0].a = 0xFF;
+    for (uint32_t i = 3; i < 6; ++i) {
+        vertices[i].x = (m_gp0CommandBuffer[2 * i - 3] & 0xFFFF) + m_drawingOffsetX;
+        vertices[i].y = ((m_gp0CommandBuffer[2 * i - 3] >> 16) & 0xFFFF) + m_drawingOffsetY;
+        vertices[i].color.word = m_gp0CommandBuffer[0] | 0xFF000000;
+    }
 
     m_renderer.pushQuad(vertices, sizeof(vertices));
 }
@@ -154,27 +143,13 @@ void GPU::RenderOpaqueTexturedQuadWithBlending(uint32_t instruction)
 void GPU::RenderOpaqueShadedTriangle(uint32_t instruction)
 {
     // GP0(30h)
-    Renderer::Vertex vertices[3];
+    Renderer::GouraudVertex vertices[3];
 
-    vertices[0].x = m_gp0CommandBuffer[1] & 0xFFFF;
-    vertices[0].y = (m_gp0CommandBuffer[1] >> 16) & 0xFFFF;
-    vertices[1].x = m_gp0CommandBuffer[3] & 0xFFFF;
-    vertices[1].y = (m_gp0CommandBuffer[3] >> 16) & 0xFFFF;
-    vertices[2].x = m_gp0CommandBuffer[5] & 0xFFFF;
-    vertices[2].y = (m_gp0CommandBuffer[5] >> 16) & 0xFFFF;
-
-    vertices[0].r = m_gp0CommandBuffer[0] & 0xFF;
-    vertices[0].g = (m_gp0CommandBuffer[0] >> 8) & 0xFF;
-    vertices[0].b = (m_gp0CommandBuffer[0] >> 16) & 0xFF;
-    vertices[0].a = 0xFF;
-    vertices[1].r = m_gp0CommandBuffer[2] & 0xFF;
-    vertices[1].g = (m_gp0CommandBuffer[2] >> 8) & 0xFF;
-    vertices[1].b = (m_gp0CommandBuffer[2] >> 16) & 0xFF;
-    vertices[1].a = 0xFF;
-    vertices[2].r = m_gp0CommandBuffer[4] & 0xFF;
-    vertices[2].g = (m_gp0CommandBuffer[4] >> 8) & 0xFF;
-    vertices[2].b = (m_gp0CommandBuffer[4] >> 16) & 0xFF;
-    vertices[2].a = 0xFF;
+    for (uint32_t i = 0; i < 3; ++i) {
+        vertices[i].x = (m_gp0CommandBuffer[2 * i + 1] & 0xFFFF) + m_drawingOffsetX;
+        vertices[i].y = ((m_gp0CommandBuffer[2 * i + 1] >> 16) & 0xFFFF) + m_drawingOffsetY;
+        vertices[i].color.word = m_gp0CommandBuffer[2 * i] | 0xFF000000;
+    }
 
     m_renderer.pushTriangle(vertices, sizeof(vertices));
 }
@@ -182,47 +157,19 @@ void GPU::RenderOpaqueShadedTriangle(uint32_t instruction)
 void GPU::RenderOpaqueShadedQuad(uint32_t instruction)
 {
     // GP0(38h)
-    Renderer::Vertex vertices[6];
+    Renderer::GouraudVertex vertices[6];
 
-    vertices[0].x = m_gp0CommandBuffer[1] & 0xFFFF;
-    vertices[0].y = (m_gp0CommandBuffer[1] >> 16) & 0xFFFF;
-    vertices[1].x = m_gp0CommandBuffer[3] & 0xFFFF;
-    vertices[1].y = (m_gp0CommandBuffer[3] >> 16) & 0xFFFF;
-    vertices[2].x = m_gp0CommandBuffer[5] & 0xFFFF;
-    vertices[2].y = (m_gp0CommandBuffer[5] >> 16) & 0xFFFF;
+    for (uint32_t i = 0; i < 3; ++i) {
+        vertices[i].x = (m_gp0CommandBuffer[2 * i + 1] & 0xFFFF) + m_drawingOffsetX;
+        vertices[i].y = ((m_gp0CommandBuffer[2 * i + 1] >> 16) & 0xFFFF) + m_drawingOffsetY;
+        vertices[i].color.word = m_gp0CommandBuffer[2 * i] | 0xFF000000;
+    }
 
-    vertices[0].r = m_gp0CommandBuffer[0] & 0xFF;
-    vertices[0].g = (m_gp0CommandBuffer[0] >> 8) & 0xFF;
-    vertices[0].b = (m_gp0CommandBuffer[0] >> 16) & 0xFF;
-    vertices[0].a = 0xFF;
-    vertices[1].r = m_gp0CommandBuffer[2] & 0xFF;
-    vertices[1].g = (m_gp0CommandBuffer[2] >> 8) & 0xFF;
-    vertices[1].b = (m_gp0CommandBuffer[2] >> 16) & 0xFF;
-    vertices[1].a = 0xFF;
-    vertices[2].r = m_gp0CommandBuffer[4] & 0xFF;
-    vertices[2].g = (m_gp0CommandBuffer[4] >> 8) & 0xFF;
-    vertices[2].b = (m_gp0CommandBuffer[4] >> 16) & 0xFF;
-    vertices[2].a = 0xFF;
-
-    vertices[3].x = m_gp0CommandBuffer[3] & 0xFFFF;
-    vertices[3].y = (m_gp0CommandBuffer[3] >> 16) & 0xFFFF;
-    vertices[4].x = m_gp0CommandBuffer[5] & 0xFFFF;
-    vertices[4].y = (m_gp0CommandBuffer[5] >> 16) & 0xFFFF;
-    vertices[5].x = m_gp0CommandBuffer[7] & 0xFFFF;
-    vertices[5].y = (m_gp0CommandBuffer[7] >> 16) & 0xFFFF;
-
-    vertices[3].r = m_gp0CommandBuffer[2] & 0xFF;
-    vertices[3].g = (m_gp0CommandBuffer[2] >> 8) & 0xFF;
-    vertices[3].b = (m_gp0CommandBuffer[2] >> 16) & 0xFF;
-    vertices[3].a = 0xFF;
-    vertices[4].r = m_gp0CommandBuffer[4] & 0xFF;
-    vertices[4].g = (m_gp0CommandBuffer[4] >> 8) & 0xFF;
-    vertices[4].b = (m_gp0CommandBuffer[4] >> 16) & 0xFF;
-    vertices[4].a = 0xFF;
-    vertices[5].r = m_gp0CommandBuffer[6] & 0xFF;
-    vertices[5].g = (m_gp0CommandBuffer[6] >> 8) & 0xFF;
-    vertices[5].b = (m_gp0CommandBuffer[6] >> 16) & 0xFF;
-    vertices[5].a = 0xFF;
+    for (uint32_t i = 3; i < 6; ++i) {
+        vertices[i].x = (m_gp0CommandBuffer[2 * i - 3] & 0xFFFF) + m_drawingOffsetX;
+        vertices[i].y = ((m_gp0CommandBuffer[2 * i - 3] >> 16) & 0xFFFF) + m_drawingOffsetY;
+        vertices[i].color.word = m_gp0CommandBuffer[2 * i - 4] | 0xFF000000;
+    }
 
     m_renderer.pushQuad(vertices, sizeof(vertices));
 }
@@ -230,12 +177,16 @@ void GPU::RenderOpaqueShadedQuad(uint32_t instruction)
 void GPU::CopyRectangleToVRAM(uint32_t instruction)
 {
     // GP0(A0h)
-    uint32_t res = m_gp0CommandBuffer[2];
-    uint32_t width = res & 0xFFFF;
-    uint32_t height = res >> 16;
-    uint32_t imgSize = width * height;
+    m_gp0ImageData.destinationX = m_gp0CommandBuffer[1] & 0xFFFF;
+    m_gp0ImageData.destinationY = m_gp0CommandBuffer[1] >> 16;
+    
+    m_gp0ImageData.width = m_gp0CommandBuffer[2] & 0xFFFF;
+    m_gp0ImageData.height = m_gp0CommandBuffer[2] >> 16;
+    uint32_t imgSize = m_gp0ImageData.width * m_gp0ImageData.height;
     imgSize = (imgSize + 1) & ~1;
     m_gp0RemainigWords = imgSize / 2;
+    m_gp0ImageData.image.clear();
+    m_gp0ImageData.image.reserve(m_gp0RemainigWords);
     m_gp0Mode = GP0Mode::ImageLoad;
 }
 
