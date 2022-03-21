@@ -25,7 +25,6 @@ set(SOURCE_FILES
 )
 
 add_library(${TARGET_NAME_LIB} STATIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt
 	${SOURCE_FILES}
 )
 

@@ -4,7 +4,6 @@ set(SOURCE_FILES
 )
 
 add_executable(${TARGET_NAME_TESTS}
-    ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt
 	${SOURCE_FILES}
 )
 

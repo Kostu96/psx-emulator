@@ -73,7 +73,7 @@ int main()
     {
         glfwPollEvents();
 
-        for (size_t i = 0; i < 500000; ++i)
+        for (size_t i = 0; i < 5000000; ++i)
             cpu.runNextInstruction();
     }
     
