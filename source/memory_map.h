@@ -4,6 +4,7 @@
 #include "dma.h"
 #include "gpu.h"
 #include "timers.h"
+#include "cd_rom.h"
 
 class MemoryMap
 {
@@ -30,6 +31,7 @@ private:
 	static const AddressRange IRQ_CONTROL_RANGE;
 	static const AddressRange DMA_RANGE;
 	static const AddressRange TIMERS_RANGE;
+	static const AddressRange CDROM_RANGE;
 	static const AddressRange GPU_RANGE;
 	static const AddressRange SPU_RANGE;
 	static const AddressRange EXPANSION2_RANGE;
@@ -41,4 +43,5 @@ private:
 	DMA m_dma;
 	GPU m_gpu;
 	Timers m_timers;
+	CDROM m_cdROM;
 };

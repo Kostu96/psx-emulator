@@ -13,6 +13,9 @@ uint8_t MemoryMap::load8(uint32_t address) const
     if (RAM_RANGE.contains(absAddr, offset))
         return m_ram.load8(offset);
 
+    if (CDROM_RANGE.contains(absAddr, offset))
+        return m_cdROM.load8(offset);
+
     if (EXPANSION1_RANGE.contains(absAddr, offset))
         return 0xFF; // To indicate that there is no EXPANSION1
 
@@ -91,6 +94,11 @@ void MemoryMap::store8(uint32_t address, uint8_t value)
 
     if (RAM_RANGE.contains(absAddr, offset)) {
         m_ram.store8(offset, value);
+        return;
+    }
+
+    if (CDROM_RANGE.contains(absAddr, offset)) {
+        m_cdROM.store8(offset, value);
         return;
     }
 
@@ -328,6 +336,7 @@ const AddressRange MemoryMap::RAM_SIZE_RANGE{       0x1F801060, 4 };
 const AddressRange MemoryMap::IRQ_CONTROL_RANGE{    0x1F801070, 8 };
 const AddressRange MemoryMap::DMA_RANGE{            0x1F801080, 128 };
 const AddressRange MemoryMap::TIMERS_RANGE{         0x1F801100, 48 };
+const AddressRange MemoryMap::CDROM_RANGE{          0x1F801800, 4 };
 const AddressRange MemoryMap::GPU_RANGE{            0x1F801810, 8 };
 const AddressRange MemoryMap::SPU_RANGE{            0x1F801C00, 640 };
 const AddressRange MemoryMap::EXPANSION2_RANGE{     0x1F802000, 128 };

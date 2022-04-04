@@ -21,6 +21,4 @@ void Timers::store32(uint32_t offset, uint32_t value)
 	size_t counterIndex = offset >> 4;
 	size_t fieldIndex = (offset & 0xF) / 4;
 	m_counters[counterIndex].as32[fieldIndex] = value;
-	std::cerr << "Unhandled store32 to TIMERS: " << std::hex << offset << ':' << value << std::dec << '\n';
-	__debugbreak();
 }
