@@ -4,19 +4,23 @@
 
 uint32_t Timers::load32(uint32_t offset) const
 {
-	std::cerr << "Unhandled load32 from TIMERS: " << std::hex << offset << std::dec << '\n';
-	__debugbreak();
-	return 0;
+	size_t counterIndex = offset >> 4;
+	size_t fieldIndex = (offset & 0xF) / 4;
+	return m_counters[counterIndex].as32[fieldIndex];
 }
 
 void Timers::store16(uint32_t offset, uint16_t value)
 {
-	std::cerr << "Unhandled store16 to TIMERS: " << std::hex << offset << ':' << value << std::dec << '\n';
-	__debugbreak();
+	size_t counterIndex = offset >> 4;
+	size_t fieldIndex = (offset & 0xF) / 2;
+	m_counters[counterIndex].as16[fieldIndex] = value;
 }
 
 void Timers::store32(uint32_t offset, uint32_t value)
 {
+	size_t counterIndex = offset >> 4;
+	size_t fieldIndex = (offset & 0xF) / 4;
+	m_counters[counterIndex].as32[fieldIndex] = value;
 	std::cerr << "Unhandled store32 to TIMERS: " << std::hex << offset << ':' << value << std::dec << '\n';
 	__debugbreak();
 }

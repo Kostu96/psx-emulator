@@ -35,7 +35,7 @@ uint16_t MemoryMap::load16(uint32_t address) const
         return m_ram.load16(offset);
 
     if (SPU_RANGE.contains(absAddr, offset)) {
-        std::cerr << "Temp handled read from SPU\n";
+        //std::cerr << "Temp handled read from SPU\n";
         return 0;
     }
 
