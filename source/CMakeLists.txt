@@ -15,6 +15,8 @@ set(SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/ram.h
     ${CMAKE_CURRENT_SOURCE_DIR}/registers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/registers.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/timers.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/timers.h
     ${CMAKE_CURRENT_SOURCE_DIR}/type_helpers.h
     ${CMAKE_CURRENT_SOURCE_DIR}/opengl/buffers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/opengl/buffers.h
@@ -31,6 +33,7 @@ add_library(${TARGET_NAME_LIB} STATIC
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX source FILES ${SOURCE_FILES})
 
 target_link_libraries(${TARGET_NAME_LIB}
+	cpp-common-lib
 	glad
 	glfw
 )

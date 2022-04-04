@@ -17,6 +17,7 @@ uint8_t MemoryMap::load8(uint32_t address) const
         return 0xFF; // To indicate that there is no EXPANSION1
 
     std::cerr << "Unhandled access when loading from: " << std::hex << address << std::dec << '\n';
+    __debugbreak();
     return 0xDE;
 }
 
@@ -44,6 +45,7 @@ uint16_t MemoryMap::load16(uint32_t address) const
     }
 
     std::cerr << "Unhandled access when loading from: " << std::hex << address << std::dec << '\n';
+    __debugbreak();
     return 0xDEAD;
 }
 
@@ -74,12 +76,11 @@ uint32_t MemoryMap::load32(uint32_t address) const
         return 0;
     }
 
-    if (TIMERS_RANGE.contains(absAddr, offset)) {
-        std::cerr << "Temp handled load from TIMERS\n";
-        return 0;
-    }
+    if (TIMERS_RANGE.contains(absAddr, offset))
+        return m_timers.load32(offset);
 
     std::cerr << "Unhandled access when loading from: " << std::hex << address << std::dec << '\n';
+    __debugbreak();
     return 0xDEADBEEF;
 }
 
@@ -100,6 +101,7 @@ void MemoryMap::store8(uint32_t address, uint8_t value)
     }
 
     std::cerr << "Unhandled access when storing to: " << std::hex << address << std::dec << '\n';
+    __debugbreak();
 }
 
 void MemoryMap::store16(uint32_t address, uint16_t value)
@@ -128,11 +130,12 @@ void MemoryMap::store16(uint32_t address, uint16_t value)
     }
 
     if (TIMERS_RANGE.contains(absAddr, offset)) {
-        std::cerr << "Unhandled write to TIMERS: " << std::hex << address << std::dec << '\n';
-        return; // Ignore TIMERS for now
+        m_timers.store16(offset, value);
+        return;
     }
 
     std::cerr << "Unhandled access when storing to: " << std::hex << address << std::dec << '\n';
+    __debugbreak();
 }
 
 void MemoryMap::store32(uint32_t address, uint32_t value)
@@ -170,8 +173,8 @@ void MemoryMap::store32(uint32_t address, uint32_t value)
     }
 
     if (TIMERS_RANGE.contains(absAddr, offset)) {
-        std::cerr << "Unhandled write to TIMERS: " << std::hex << address << std::dec << '\n';
-        return; // Ignore TIMERS for now
+        m_timers.store32(offset, value);
+        return;
     }
 
     if (CACHE_CONTROL_RANGE.contains(absAddr, offset)) {
@@ -208,6 +211,7 @@ void MemoryMap::store32(uint32_t address, uint32_t value)
     }
     
     std::cerr << "Unhandled access when storing to: " << std::hex << address << std::dec << '\n';
+    __debugbreak();
 }
 
 uint32_t MemoryMap::maskRegion(uint32_t address)
@@ -317,15 +321,15 @@ const uint32_t MemoryMap::REGION_MASK[] = {
     // KSEG2 1024MB
     0xFFFFFFFF, 0xFFFFFFFF
 };
-const AddressRange MemoryMap::RAM_RANGE{ 0x00000000, 2 * 1024 * 1024 };
-const AddressRange MemoryMap::EXPANSION1_RANGE{ 0x1F000000, 8 * 1024 * 1024 };
+const AddressRange MemoryMap::RAM_RANGE{            0x00000000, 2 * 1024 * 1024 };
+const AddressRange MemoryMap::EXPANSION1_RANGE{     0x1F000000, 8 * 1024 * 1024 };
 const AddressRange MemoryMap::MEMORY_CONTROL_RANGE{ 0x1F801000, 36 };
-const AddressRange MemoryMap::RAM_SIZE_RANGE{ 0x1F801060, 4 };
-const AddressRange MemoryMap::IRQ_CONTROL_RANGE{ 0x1F801070, 8 };
-const AddressRange MemoryMap::DMA_RANGE{ 0x1F801080, 128 };
-const AddressRange MemoryMap::TIMERS_RANGE{ 0x1F801100, 48 };
-const AddressRange MemoryMap::GPU_RANGE{ 0x1F801810, 8 };
-const AddressRange MemoryMap::SPU_RANGE{ 0x1F801C00, 640 };
-const AddressRange MemoryMap::EXPANSION2_RANGE{ 0x1F802000, 128 };
-const AddressRange MemoryMap::BIOS_RANGE{ 0x1FC00000, 512 * 1024 };
-const AddressRange MemoryMap::CACHE_CONTROL_RANGE{ 0xFFFE0130, 4 };
+const AddressRange MemoryMap::RAM_SIZE_RANGE{       0x1F801060, 4 };
+const AddressRange MemoryMap::IRQ_CONTROL_RANGE{    0x1F801070, 8 };
+const AddressRange MemoryMap::DMA_RANGE{            0x1F801080, 128 };
+const AddressRange MemoryMap::TIMERS_RANGE{         0x1F801100, 48 };
+const AddressRange MemoryMap::GPU_RANGE{            0x1F801810, 8 };
+const AddressRange MemoryMap::SPU_RANGE{            0x1F801C00, 640 };
+const AddressRange MemoryMap::EXPANSION2_RANGE{     0x1F802000, 128 };
+const AddressRange MemoryMap::BIOS_RANGE{           0x1FC00000, 512 * 1024 };
+const AddressRange MemoryMap::CACHE_CONTROL_RANGE{  0xFFFE0130, 4 };

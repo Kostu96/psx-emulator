@@ -1,3 +1,10 @@
+add_subdirectory(cpp-common-lib)
+
+set_target_properties(cpp-common-lib PROPERTIES
+    FOLDER third_party
+    MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+)
+
 set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
 set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
 add_subdirectory(gtest)

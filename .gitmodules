@@ -4,3 +4,6 @@
 [submodule "glfw"]
 	path = third_party/glfw
 	url = https://github.com/glfw/glfw.git
+[submodule "cpp-common"]
+	path = third_party/cpp-common-lib
+	url = https://github.com/Kostu96/cpp-common-lib.git

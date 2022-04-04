@@ -3,6 +3,7 @@
 #include "ram.h"
 #include "dma.h"
 #include "gpu.h"
+#include "timers.h"
 
 class MemoryMap
 {
@@ -39,4 +40,5 @@ private:
 	RAM m_ram;
 	DMA m_dma;
 	GPU m_gpu;
+	Timers m_timers;
 };
